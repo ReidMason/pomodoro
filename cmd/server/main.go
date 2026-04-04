@@ -14,11 +14,13 @@ func main() {
 	wg.Add(1)
 	eventHandler := EventHandler{WG: &wg}
 
-	interval := 5 * time.Second
-	pomodoro := models.NewPomodoro(interval)
+	pomodoroDuration := 1 * time.Second   // Should be 25 minutes
+	shortBreakDuration := 1 * time.Second // Shouldbe 5 minutes
+	longBreakDuration := 1 * time.Second  // Shouldbe 20 minutes
+	pomodoro := models.NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration)
 	pomodoro.AddSubscriber(eventHandler.HandlePomodoroEvent)
 
-	startPomodoro := usecases.NewStartPomodoro(pomodoro)
+	startPomodoro := usecases.NewStartPomodoro(*pomodoro)
 	startPomodoro.Handle()
 
 	wg.Wait()
@@ -29,9 +31,9 @@ type EventHandler struct {
 }
 
 func (eh *EventHandler) HandlePomodoroEvent(event string, pomodoro *models.Pomodoro) {
-	fmt.Println(pomodoro.GetTimeRemaining())
+	fmt.Println(event, pomodoro.GetTimeRemaining())
 
-	if event == "Done" {
+	if event == "LongBreak.Done" {
 		eh.WG.Done()
 	}
 }
