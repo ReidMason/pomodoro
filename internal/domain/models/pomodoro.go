@@ -7,17 +7,6 @@ import (
 type SubscriberFunc func(event PomodoroEvent, p *Pomodoro)
 type State func(pomodoro Pomodoro) (Pomodoro, State)
 
-type PomodoroEvent int
-
-const (
-	PomodoroSecondElapsed PomodoroEvent = iota
-	PomodoroDone
-	ShortBreakSecondElapsed
-	ShortBreakDone
-	LongBreakSecondElapsed
-	LongBreakDone
-)
-
 type Pomodoro struct {
 	status             string
 	timeRemaining      time.Duration
