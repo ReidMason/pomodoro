@@ -4,8 +4,19 @@ import (
 	"time"
 )
 
-type SubscriberFunc func(event string, p *Pomodoro)
+type SubscriberFunc func(event PomodoroEvent, p *Pomodoro)
 type State func(pomodoro Pomodoro) (Pomodoro, State)
+
+type PomodoroEvent int
+
+const (
+	PomodoroSecondElapsed PomodoroEvent = iota
+	PomodoroDone
+	ShortBreakSecondElapsed
+	ShortBreakDone
+	LongBreakSecondElapsed
+	LongBreakDone
+)
 
 type Pomodoro struct {
 	status             string
@@ -45,12 +56,12 @@ func (p Pomodoro) GetTimeRemaining() time.Duration {
 func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.timeRemaining = pomodoro.pomodoroDuration
 	for pomodoro.timeRemaining > 0 {
-		pomodoro.notifySubscribers("Pomodoro.SecondElapsed")
+		pomodoro.notifySubscribers(PomodoroSecondElapsed)
 		pomodoro.timeRemaining -= oneSecond
 		time.Sleep(oneSecond)
 	}
 
-	pomodoro.notifySubscribers("Pomodoro.Done")
+	pomodoro.notifySubscribers(PomodoroDone)
 	pomodoro.pomodorosCompleted++
 	if pomodoro.pomodorosCompleted >= 4 {
 		return pomodoro, runLongBreak
@@ -61,12 +72,12 @@ func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
 func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.timeRemaining = pomodoro.shortBreakDuration
 	for pomodoro.timeRemaining > 0 {
-		pomodoro.notifySubscribers("ShortBreak.SecondElapsed")
+		pomodoro.notifySubscribers(ShortBreakSecondElapsed)
 		pomodoro.timeRemaining -= oneSecond
 		time.Sleep(oneSecond)
 	}
 
-	pomodoro.notifySubscribers("ShortBreak.Done")
+	pomodoro.notifySubscribers(ShortBreakDone)
 
 	return pomodoro, runPomodoro
 }
@@ -75,12 +86,12 @@ func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.pomodorosCompleted = 0
 	pomodoro.timeRemaining = pomodoro.longBreakDuration
 	for pomodoro.timeRemaining > 0 {
-		pomodoro.notifySubscribers("LongBreak.SecondElapsed")
+		pomodoro.notifySubscribers(LongBreakSecondElapsed)
 		pomodoro.timeRemaining -= oneSecond
 		time.Sleep(oneSecond)
 	}
 
-	pomodoro.notifySubscribers("LongBreak.Done")
+	pomodoro.notifySubscribers(LongBreakDone)
 	return pomodoro, nil
 }
 
@@ -94,7 +105,7 @@ func run(pomodoro Pomodoro, start State) Pomodoro {
 	}
 }
 
-func (p *Pomodoro) notifySubscribers(event string) {
+func (p *Pomodoro) notifySubscribers(event PomodoroEvent) {
 	for _, subscriber := range p.subscribers {
 		subscriber(event, p)
 	}
