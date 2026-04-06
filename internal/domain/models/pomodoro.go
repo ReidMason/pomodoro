@@ -7,8 +7,16 @@ import (
 type SubscriberFunc func(event PomodoroEvent, p *Pomodoro)
 type State func(pomodoro Pomodoro) (Pomodoro, State)
 
+type Stage int
+
+const (
+	PomodoroStage = iota
+	ShortBreakStage
+	LongBreakStage
+)
+
 type Pomodoro struct {
-	status             string
+	stage              Stage
 	task               string
 	timeRemaining      time.Duration
 	subscribers        []SubscriberFunc
@@ -22,7 +30,7 @@ const oneSecond = 1 * time.Second
 
 func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string) *Pomodoro {
 	return &Pomodoro{
-		status:             "",
+		stage:              PomodoroStage,
 		task:               task,
 		timeRemaining:      0,
 		pomodorosCompleted: 0,
@@ -45,6 +53,7 @@ func (p Pomodoro) GetTimeRemaining() time.Duration {
 }
 
 func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
+	pomodoro.stage = PomodoroStage
 	pomodoro.timeRemaining = pomodoro.pomodoroDuration
 	for pomodoro.timeRemaining > 0 {
 		pomodoro.notifySubscribers(PomodoroSecondElapsed)
@@ -61,6 +70,7 @@ func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
 }
 
 func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
+	pomodoro.stage = ShortBreakStage
 	pomodoro.timeRemaining = pomodoro.shortBreakDuration
 	for pomodoro.timeRemaining > 0 {
 		pomodoro.notifySubscribers(ShortBreakSecondElapsed)
@@ -75,6 +85,7 @@ func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
 
 func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.pomodorosCompleted = 0
+	pomodoro.stage = LongBreakStage
 	pomodoro.timeRemaining = pomodoro.longBreakDuration
 	for pomodoro.timeRemaining > 0 {
 		pomodoro.notifySubscribers(LongBreakSecondElapsed)
