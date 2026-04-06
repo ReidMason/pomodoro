@@ -9,6 +9,7 @@ type State func(pomodoro Pomodoro) (Pomodoro, State)
 
 type Pomodoro struct {
 	status             string
+	task               string
 	timeRemaining      time.Duration
 	subscribers        []SubscriberFunc
 	pomodorosCompleted int
@@ -19,9 +20,10 @@ type Pomodoro struct {
 
 const oneSecond = 1 * time.Second
 
-func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration) *Pomodoro {
+func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string) *Pomodoro {
 	return &Pomodoro{
 		status:             "",
+		task:               task,
 		timeRemaining:      0,
 		pomodorosCompleted: 0,
 		pomodoroDuration:   pomodoroDuration,

@@ -14,10 +14,11 @@ func main() {
 	wg.Add(1)
 	eventHandler := EventHandler{WG: &wg}
 
+	task := "testing"
 	pomodoroDuration := 1 * time.Second   // Should be 25 minutes
 	shortBreakDuration := 1 * time.Second // Shouldbe 5 minutes
 	longBreakDuration := 1 * time.Second  // Shouldbe 20 minutes
-	pomodoro := models.NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration)
+	pomodoro := models.NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration, task)
 	pomodoro.AddSubscriber(eventHandler.HandlePomodoroEvent)
 
 	startPomodoro := usecases.NewStartPomodoro(*pomodoro)
