@@ -109,6 +109,6 @@ func run(pomodoro Pomodoro, start State) Pomodoro {
 
 func (p Pomodoro) notifySubscribers(event PomodoroEvent) {
 	for _, subscriber := range p.subscribers {
-		subscriber(event, p)
+		go subscriber(event, p)
 	}
 }
