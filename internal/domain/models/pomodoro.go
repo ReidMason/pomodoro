@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type SubscriberFunc func(event PomodoroEvent, p *Pomodoro)
+type SubscriberFunc func(event PomodoroEvent, p Pomodoro)
 type State func(pomodoro Pomodoro) (Pomodoro, State)
 
 type Stage int
@@ -107,7 +107,7 @@ func run(pomodoro Pomodoro, start State) Pomodoro {
 	}
 }
 
-func (p *Pomodoro) notifySubscribers(event PomodoroEvent) {
+func (p Pomodoro) notifySubscribers(event PomodoroEvent) {
 	for _, subscriber := range p.subscribers {
 		subscriber(event, p)
 	}

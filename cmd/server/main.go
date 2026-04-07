@@ -31,7 +31,7 @@ type EventHandler struct {
 	WG *sync.WaitGroup
 }
 
-func (eh *EventHandler) HandlePomodoroEvent(event models.PomodoroEvent, pomodoro *models.Pomodoro) {
+func (eh *EventHandler) HandlePomodoroEvent(event models.PomodoroEvent, pomodoro models.Pomodoro) {
 	fmt.Println(event, pomodoro.GetTimeRemaining())
 
 	if event == models.LongBreakDone {
