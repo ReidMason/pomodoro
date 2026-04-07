@@ -16,11 +16,11 @@ const (
 )
 
 type Pomodoro struct {
-	stage              Stage
-	task               string
-	timeRemaining      time.Duration
+	Stage              Stage         `json:"stage"`
+	Task               string        `json:"task"`
+	TimeRemaining      time.Duration `json:"timeRemaining"`
 	subscribers        []SubscriberFunc
-	pomodorosCompleted int
+	PomodorosCompleted int `json:"pomodorosCompleted"`
 	pomodoroDuration   time.Duration
 	shortBreakDuration time.Duration
 	longBreakDuration  time.Duration
@@ -30,10 +30,10 @@ const oneSecond = 1 * time.Second
 
 func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string) *Pomodoro {
 	return &Pomodoro{
-		stage:              PomodoroStage,
-		task:               task,
-		timeRemaining:      0,
-		pomodorosCompleted: 0,
+		Stage:              PomodoroStage,
+		Task:               task,
+		TimeRemaining:      0,
+		PomodorosCompleted: 0,
 		pomodoroDuration:   pomodoroDuration,
 		shortBreakDuration: shortBreakDuration,
 		longBreakDuration:  longBreakDuration,
@@ -49,32 +49,32 @@ func (p Pomodoro) Start() {
 }
 
 func (p Pomodoro) GetTimeRemaining() time.Duration {
-	return p.timeRemaining
+	return p.TimeRemaining
 }
 
 func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
-	pomodoro.stage = PomodoroStage
-	pomodoro.timeRemaining = pomodoro.pomodoroDuration
-	for pomodoro.timeRemaining > 0 {
+	pomodoro.Stage = PomodoroStage
+	pomodoro.TimeRemaining = pomodoro.pomodoroDuration
+	for pomodoro.TimeRemaining > 0 {
 		pomodoro.notifySubscribers(PomodoroSecondElapsed)
-		pomodoro.timeRemaining -= oneSecond
+		pomodoro.TimeRemaining -= oneSecond
 		time.Sleep(oneSecond)
 	}
 
 	pomodoro.notifySubscribers(PomodoroDone)
-	pomodoro.pomodorosCompleted++
-	if pomodoro.pomodorosCompleted >= 4 {
+	pomodoro.PomodorosCompleted++
+	if pomodoro.PomodorosCompleted >= 4 {
 		return pomodoro, runLongBreak
 	}
 	return pomodoro, runShortBreak
 }
 
 func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
-	pomodoro.stage = ShortBreakStage
-	pomodoro.timeRemaining = pomodoro.shortBreakDuration
-	for pomodoro.timeRemaining > 0 {
+	pomodoro.Stage = ShortBreakStage
+	pomodoro.TimeRemaining = pomodoro.shortBreakDuration
+	for pomodoro.TimeRemaining > 0 {
 		pomodoro.notifySubscribers(ShortBreakSecondElapsed)
-		pomodoro.timeRemaining -= oneSecond
+		pomodoro.TimeRemaining -= oneSecond
 		time.Sleep(oneSecond)
 	}
 
@@ -84,12 +84,12 @@ func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
 }
 
 func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
-	pomodoro.pomodorosCompleted = 0
-	pomodoro.stage = LongBreakStage
-	pomodoro.timeRemaining = pomodoro.longBreakDuration
-	for pomodoro.timeRemaining > 0 {
+	pomodoro.PomodorosCompleted = 0
+	pomodoro.Stage = LongBreakStage
+	pomodoro.TimeRemaining = pomodoro.longBreakDuration
+	for pomodoro.TimeRemaining > 0 {
 		pomodoro.notifySubscribers(LongBreakSecondElapsed)
-		pomodoro.timeRemaining -= oneSecond
+		pomodoro.TimeRemaining -= oneSecond
 		time.Sleep(oneSecond)
 	}
 

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"sync"
+	"log"
+	"net/http"
 	"time"
 
 	"github.com/ReidMason/pomodoro/internal/domain/models"
@@ -10,10 +12,28 @@ import (
 )
 
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	eventHandler := EventHandler{WG: &wg}
+	hub := newHub()
+	go hub.run()
 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Testing"))
+	})
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Serving WS")
+		serveWs(hub, w, r)
+	})
+
+	startPom(hub)
+
+	log.Println("Starting server")
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}
+
+func startPom(hub *Hub) {
+	eventHandler := EventHandler{hub: hub}
 	task := "testing"
 	pomodoroDuration := 1 * time.Second   // Should be 25 minutes
 	shortBreakDuration := 1 * time.Second // Shouldbe 5 minutes
@@ -23,18 +43,20 @@ func main() {
 
 	startPomodoro := usecases.NewStartPomodoro(*pomodoro)
 	startPomodoro.Handle()
-
-	wg.Wait()
 }
 
 type EventHandler struct {
-	WG *sync.WaitGroup
+	hub *Hub
 }
 
 func (eh *EventHandler) HandlePomodoroEvent(event models.PomodoroEvent, pomodoro models.Pomodoro) {
 	fmt.Println(event, pomodoro.GetTimeRemaining())
 
-	if event == models.LongBreakDone {
-		eh.WG.Done()
+	body, err := json.Marshal(pomodoro)
+	if err != nil {
+		log.Println("failed to marshal response")
+		return
 	}
+
+	eh.hub.broadcast <- body
 }
