@@ -65,7 +65,17 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.hub.broadcast <- message
+
+		c.handleMessage(string(message))
+	}
+}
+
+func (c *Client) handleMessage(message string) {
+	switch message {
+	case "start":
+		c.hub.Pomodoro.Start()
+	default:
+		log.Printf("Unknown command: '%s'", message)
 	}
 }
 

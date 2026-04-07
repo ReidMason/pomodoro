@@ -41,6 +41,8 @@ func startPom(hub *Hub) {
 	pomodoro := models.NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration, task)
 	pomodoro.AddSubscriber(eventHandler.HandlePomodoroEvent)
 
+	hub.Pomodoro = pomodoro
+
 	startPomodoro := usecases.NewStartPomodoro(*pomodoro)
 	startPomodoro.Handle()
 }
