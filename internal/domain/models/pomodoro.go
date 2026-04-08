@@ -26,8 +26,6 @@ type Pomodoro struct {
 	longBreakDuration  time.Duration
 }
 
-const oneSecond = 1 * time.Second
-
 func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string) *Pomodoro {
 	return &Pomodoro{
 		Stage:              PomodoroStage,
@@ -57,11 +55,12 @@ func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.TimeRemaining = pomodoro.pomodoroDuration
 	for pomodoro.TimeRemaining > 0 {
 		pomodoro.notifySubscribers(PomodoroSecondElapsed)
-		pomodoro.TimeRemaining -= oneSecond
-		time.Sleep(oneSecond)
+		pomodoro.TimeRemaining -= time.Second
+		time.Sleep(time.Second)
 	}
 
 	pomodoro.notifySubscribers(PomodoroDone)
+	time.Sleep(time.Second)
 	pomodoro.PomodorosCompleted++
 	if pomodoro.PomodorosCompleted >= 4 {
 		return pomodoro, runLongBreak
@@ -74,11 +73,12 @@ func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.TimeRemaining = pomodoro.shortBreakDuration
 	for pomodoro.TimeRemaining > 0 {
 		pomodoro.notifySubscribers(ShortBreakSecondElapsed)
-		pomodoro.TimeRemaining -= oneSecond
-		time.Sleep(oneSecond)
+		pomodoro.TimeRemaining -= time.Second
+		time.Sleep(time.Second)
 	}
 
 	pomodoro.notifySubscribers(ShortBreakDone)
+	time.Sleep(time.Second)
 
 	return pomodoro, runPomodoro
 }
@@ -89,11 +89,13 @@ func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.TimeRemaining = pomodoro.longBreakDuration
 	for pomodoro.TimeRemaining > 0 {
 		pomodoro.notifySubscribers(LongBreakSecondElapsed)
-		pomodoro.TimeRemaining -= oneSecond
-		time.Sleep(oneSecond)
+		pomodoro.TimeRemaining -= time.Second
+		time.Sleep(time.Second)
 	}
 
 	pomodoro.notifySubscribers(LongBreakDone)
+	time.Sleep(time.Second)
+
 	// TODO: remove this infinite loop
 	// return pomodoro, nil
 	return pomodoro, runPomodoro

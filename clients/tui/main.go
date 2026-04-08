@@ -102,7 +102,7 @@ func (m model) Init() tea.Cmd {
 type tickMsg time.Time
 
 func scheduleTick() tea.Cmd {
-	return tea.Every(time.Second, func(t time.Time) tea.Msg {
+	return tea.Every(time.Millisecond*100, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
