@@ -1,26 +1,99 @@
 package main
 
 import (
+	"github.com/gorilla/websocket"
 	"log"
+	"net/url"
+	"os"
+	"os/signal"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 )
 
 type model struct {
-	text string
+	text     string
+	pomodoro *pomodoro
+}
+
+func startWsClient(pom *pomodoro) {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	addr := "localhost:8080"
+	u := url.URL{Scheme: "ws", Host: addr, Path: "/ws"}
+	log.Printf("connecting to %s", u.String())
+
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("Dial:", err)
+	}
+	defer c.Close()
+
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		for {
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+			pom.text = string(message)
+			log.Printf("recv: %s", message)
+		}
+	}()
+
+	//		ticker := time.NewTicker(time.Second)
+	//		defer ticker.Stop()
+
+	for {
+		select {
+		case <-done:
+			return
+		// case t := <-ticker.C:
+		// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
+		// 	if err != nil {
+		// 		log.Println("Write:", err)
+		// 	}
+		case <-interrupt:
+			log.Println("interrupt")
+			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil {
+				log.Println("write close:", err)
+				return
+			}
+
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+			}
+			return
+		}
+	}
+}
+
+type pomodoro struct {
+	stage int
+	text  string
 }
 
 func main() {
-	p := tea.NewProgram(initModel())
+	pom := pomodoro{}
+
+	go startWsClient(&pom)
+	m := initModel(&pom)
+	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Error starting program: %v", err)
 	}
 }
 
-func initModel() model {
+func initModel(pomodoro *pomodoro) model {
 	return model{
-		text: "Testing!",
+		text:     "Testing!",
+		pomodoro: pomodoro,
 	}
 }
 
@@ -39,7 +112,8 @@ func scheduleTick() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		m.text = time.Time(msg).Format("01/02 03:04:05PM")
+		// m.text = time.Time(msg).Format("01/02 03:04:05PM")
+		m.text = m.pomodoro.text
 		return m, scheduleTick()
 	case tea.KeyPressMsg:
 		switch msg.String() {
