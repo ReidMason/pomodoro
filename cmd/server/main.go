@@ -32,33 +32,39 @@ func main() {
 	}
 }
 
+type pomodoroEventMessage struct {
+	Event    models.PomodoroEvent
+	Pomodoro models.Pomodoro
+}
+
 func startPom(hub *Hub) {
-	eventHandler := EventHandler{hub: hub}
 	task := "testing"
-	pomodoroDuration := 1 * time.Second   // Should be 25 minutes
-	shortBreakDuration := 1 * time.Second // Shouldbe 5 minutes
-	longBreakDuration := 1 * time.Second  // Shouldbe 20 minutes
+	pomodoroDuration := 5 * time.Second   // Should be 25 minutes
+	shortBreakDuration := 3 * time.Second // Shouldbe 5 minutes
+	longBreakDuration := 2 * time.Second  // Shouldbe 20 minutes
 	pomodoro := models.NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration, task)
-	pomodoro.AddSubscriber(eventHandler.HandlePomodoroEvent)
+
+	ch := make(chan pomodoroEventMessage, 32)
+	go func() {
+		for msg := range ch {
+			fmt.Println(msg.Event, msg.Pomodoro.GetTimeRemaining())
+
+			body, err := json.Marshal(msg.Pomodoro)
+			if err != nil {
+				log.Println("failed to marshal response")
+				return
+			}
+
+			hub.broadcast <- body
+		}
+	}()
+
+	pomodoro.AddSubscriber(func(e models.PomodoroEvent, p models.Pomodoro) {
+		ch <- pomodoroEventMessage{Event: e, Pomodoro: p}
+	})
 
 	hub.Pomodoro = pomodoro
 
 	startPomodoro := usecases.NewStartPomodoro(*pomodoro)
 	startPomodoro.Handle()
-}
-
-type EventHandler struct {
-	hub *Hub
-}
-
-func (eh *EventHandler) HandlePomodoroEvent(event models.PomodoroEvent, pomodoro models.Pomodoro) {
-	fmt.Println(event, pomodoro.GetTimeRemaining())
-
-	body, err := json.Marshal(pomodoro)
-	if err != nil {
-		log.Println("failed to marshal response")
-		return
-	}
-
-	eh.hub.broadcast <- body
 }

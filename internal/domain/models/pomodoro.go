@@ -94,7 +94,9 @@ func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	}
 
 	pomodoro.notifySubscribers(LongBreakDone)
-	return pomodoro, nil
+	// TODO: remove this infinite loop
+	// return pomodoro, nil
+	return pomodoro, runPomodoro
 }
 
 func run(pomodoro Pomodoro, start State) Pomodoro {
@@ -109,6 +111,6 @@ func run(pomodoro Pomodoro, start State) Pomodoro {
 
 func (p Pomodoro) notifySubscribers(event PomodoroEvent) {
 	for _, subscriber := range p.subscribers {
-		go subscriber(event, p)
+		subscriber(event, p)
 	}
 }
