@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	charm.land/bubbletea/v2 v2.0.2
-	github.com/ReidMason/pomodoro v0.0.0-20260408200757-e1b4a2bef710
+	github.com/ReidMason/pomodoro v0.0.0-00010101000000-000000000000
 	github.com/gorilla/websocket v1.5.3
 )
 
@@ -26,3 +26,5 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 )
+
+replace github.com/ReidMason/pomodoro => ../..
