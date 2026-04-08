@@ -4,6 +4,7 @@ go 1.26.1
 
 require (
 	charm.land/bubbletea/v2 v2.0.2
+	github.com/ReidMason/pomodoro v0.0.0-20260408200757-e1b4a2bef710
 	github.com/gorilla/websocket v1.5.3
 )
 

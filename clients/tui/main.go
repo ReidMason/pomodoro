@@ -1,28 +1,32 @@
 package main
 
 import (
-	"github.com/gorilla/websocket"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/ReidMason/pomodoro/internal/domain/models"
+	"github.com/gorilla/websocket"
+
 	tea "charm.land/bubbletea/v2"
 )
 
 type model struct {
 	text     string
-	pomodoro *pomodoro
+	pomodoro *models.Pomodoro
 }
 
-func startWsClient(pom *pomodoro) {
+func startWsClient(pom *models.Pomodoro) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
 	addr := "localhost:8080"
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/ws"}
-	log.Printf("connecting to %s", u.String())
+	// log.Printf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -40,8 +44,7 @@ func startWsClient(pom *pomodoro) {
 				log.Println("read:", err)
 				return
 			}
-			pom.text = string(message)
-			log.Printf("recv: %s", message)
+			json.Unmarshal(message, pom)
 		}
 	}()
 
@@ -74,13 +77,8 @@ func startWsClient(pom *pomodoro) {
 	}
 }
 
-type pomodoro struct {
-	stage int
-	text  string
-}
-
 func main() {
-	pom := pomodoro{}
+	pom := models.Pomodoro{}
 
 	go startWsClient(&pom)
 	m := initModel(&pom)
@@ -90,9 +88,9 @@ func main() {
 	}
 }
 
-func initModel(pomodoro *pomodoro) model {
+func initModel(pomodoro *models.Pomodoro) model {
 	return model{
-		text:     "Testing!",
+		text:     "Connecting...",
 		pomodoro: pomodoro,
 	}
 }
@@ -112,8 +110,7 @@ func scheduleTick() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		// m.text = time.Time(msg).Format("01/02 03:04:05PM")
-		m.text = m.pomodoro.text
+		m.text = time.Time(msg).Format("01/02 03:04:05PM")
 		return m, scheduleTick()
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -127,6 +124,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() tea.View {
 	s := m.text
+	s += formatTime(m.pomodoro.TimeRemaining)
 
 	return tea.NewView(s)
+}
+
+func formatTime(duration time.Duration) string {
+	d := max(duration, 0)
+	m := int(d / time.Minute)
+	s := int((d % time.Minute) / time.Second)
+	return fmt.Sprintf("\n%d:%02d", m, s)
 }
