@@ -18,7 +18,24 @@ import (
 type model struct {
 	time     time.Time
 	pomodoro models.Pomodoro
+	status   string
 }
+
+func dial(u url.URL) (*websocket.Conn, error) {
+	var err error
+	for range 30 {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		if err != nil {
+			time.Sleep(time.Second)
+			continue
+		}
+		return c, nil
+	}
+
+	return nil, err
+}
+
+type connectionStatusUpdate string
 
 func startWsClient(program *tea.Program) {
 	interrupt := make(chan os.Signal, 1)
@@ -27,9 +44,10 @@ func startWsClient(program *tea.Program) {
 	addr := "localhost:8080"
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/ws"}
 
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, err := dial(u)
 	if err != nil {
-		log.Fatal("Dial:", err)
+		log.Println("Failed to connect", err)
+		return
 	}
 	defer c.Close()
 
@@ -39,16 +57,30 @@ func startWsClient(program *tea.Program) {
 		defer close(done)
 		for {
 			_, message, err := c.ReadMessage()
-			if err != nil {
-				log.Println("read:", err)
-				return
+			switch err.(type) {
+			case *websocket.CloseError:
+				program.Send(connectionStatusUpdate("Connection lost, reconnecting..."))
+				c, err = dial(u)
+				if err != nil {
+					program.Send(connectionStatusUpdate("Connection lost"))
+					return
+				}
+				continue
+			default:
+				if err != nil {
+					program.Send(connectionStatusUpdate("Connection unstable, unable to read messages"))
+					return
+				}
 			}
+
 			var pom models.Pomodoro
 			err = json.Unmarshal(message, &pom)
 			if err != nil {
-				log.Println("Failed to unmarshal pomodoro data", err)
+				program.Send(connectionStatusUpdate("Connection unstable, receiving bad data"))
+				continue
 			}
 			program.Send(newPomodoroData(pom))
+			program.Send(connectionStatusUpdate("Connected"))
 		}
 	}()
 
@@ -58,6 +90,7 @@ func startWsClient(program *tea.Program) {
 	for {
 		select {
 		case <-done:
+			log.Println("Done something")
 			return
 		// case t := <-ticker.C:
 		// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
@@ -120,6 +153,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, scheduleTick()
 	case newPomodoroData:
 		m.pomodoro = models.Pomodoro(msg)
+	case connectionStatusUpdate:
+		m.status = string(msg)
+		return m, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -139,9 +175,11 @@ func formatTimestamp(t time.Time) string {
 }
 
 func (m model) View() tea.View {
-	s := formatTimestamp(m.time)
+	s := formatTimestamp(m.time) + "\n"
+	s += "Task: " + m.pomodoro.Task
 	s += "\n" + m.pomodoro.CycleStage.String()
 	s += formatTimeDuration(m.pomodoro.TimeRemaining)
+	s += "\n\n" + m.status
 
 	return tea.NewView(s)
 }
