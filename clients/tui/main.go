@@ -90,7 +90,6 @@ func startWsClient(program *tea.Program) {
 	for {
 		select {
 		case <-done:
-			log.Println("Done something")
 			return
 		// case t := <-ticker.C:
 		// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
@@ -98,10 +97,8 @@ func startWsClient(program *tea.Program) {
 		// 		log.Println("Write:", err)
 		// 	}
 		case <-interrupt:
-			log.Println("interrupt")
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
-				log.Println("write close:", err)
 				return
 			}
 
