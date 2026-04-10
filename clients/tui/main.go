@@ -20,7 +20,6 @@ type model struct {
 	time     time.Time
 	pomodoro models.Pomodoro
 	status   string
-	host     string
 }
 
 func dial(u url.URL) (*websocket.Conn, error) {
@@ -39,12 +38,11 @@ func dial(u url.URL) (*websocket.Conn, error) {
 
 type connectionStatusUpdate string
 
-func startWsClient(program *tea.Program) {
+func startWsClient(program *tea.Program, host string) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	addr := "localhost:8080"
-	u := url.URL{Scheme: "ws", Host: addr, Path: "/ws"}
+	u := url.URL{Scheme: "ws", Host: host, Path: "/ws"}
 
 	c, err := dial(u)
 	if err != nil {
@@ -121,20 +119,20 @@ func main() {
 	}
 
 	pom := models.Pomodoro{}
-	m := initModel(pom, *host)
+	m := initModel(pom)
 
 	p := tea.NewProgram(m)
-	go startWsClient(p)
+	go startWsClient(p, *host)
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Error starting program: %v", err)
 	}
 }
 
-func initModel(pomodoro models.Pomodoro, host string) model {
+func initModel(pomodoro models.Pomodoro) model {
 	return model{
 		time:     getTime(),
 		pomodoro: pomodoro,
-		host:     host,
+		status:   "Connecting...",
 	}
 }
 
