@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/url"
@@ -19,6 +20,7 @@ type model struct {
 	time     time.Time
 	pomodoro models.Pomodoro
 	status   string
+	host     string
 }
 
 func dial(u url.URL) (*websocket.Conn, error) {
@@ -112,8 +114,14 @@ func startWsClient(program *tea.Program) {
 }
 
 func main() {
+	host := flag.String("s", "http://locahost:8080", "Server host address")
+	flag.Parse()
+	if host == nil {
+		log.Fatal("Provide a server url")
+	}
+
 	pom := models.Pomodoro{}
-	m := initModel(pom)
+	m := initModel(pom, *host)
 
 	p := tea.NewProgram(m)
 	go startWsClient(p)
@@ -122,10 +130,11 @@ func main() {
 	}
 }
 
-func initModel(pomodoro models.Pomodoro) model {
+func initModel(pomodoro models.Pomodoro, host string) model {
 	return model{
 		time:     getTime(),
 		pomodoro: pomodoro,
+		host:     host,
 	}
 }
 

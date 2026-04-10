@@ -16,9 +16,10 @@ type Pomodoro struct {
 	pomodoroDuration   time.Duration
 	shortBreakDuration time.Duration
 	longBreakDuration  time.Duration
+	loop               bool
 }
 
-func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string) *Pomodoro {
+func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string, loop bool) *Pomodoro {
 	return &Pomodoro{
 		CycleStage:         PomodoroStage,
 		Task:               task,
@@ -27,6 +28,7 @@ func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Du
 		pomodoroDuration:   pomodoroDuration,
 		shortBreakDuration: shortBreakDuration,
 		longBreakDuration:  longBreakDuration,
+		loop:               loop,
 	}
 }
 
@@ -88,9 +90,11 @@ func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.notifySubscribers(LongBreakDone)
 	time.Sleep(time.Second)
 
-	// TODO: remove this infinite loop
-	// return pomodoro, nil
-	return pomodoro, runPomodoro
+	if pomodoro.loop {
+		return pomodoro, runPomodoro
+	}
+
+	return pomodoro, nil
 }
 
 func run(pomodoro Pomodoro, start State) Pomodoro {

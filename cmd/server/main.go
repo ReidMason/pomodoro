@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/ReidMason/pomodoro/internal/domain/models"
@@ -26,7 +28,11 @@ func main() {
 	startPom(hub)
 
 	log.Println("Starting server")
-	err := http.ListenAndServe(":8080", nil)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
@@ -37,12 +43,36 @@ type pomodoroEventMessage struct {
 	Pomodoro models.Pomodoro
 }
 
+func convertSecondsDuration(t int) time.Duration {
+	return time.Second * time.Duration(t)
+}
+
+func loadEnvVarInt(envVar string, defaultValue int) int {
+	value := os.Getenv(envVar)
+	if value == "" {
+		return defaultValue
+	}
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		log.Fatal("Missing environment variable", envVar)
+	}
+
+	return intValue
+}
+
 func startPom(hub *Hub) {
+	pomodoroDuration := loadEnvVarInt("POMODORO_DURATION", 1200)
+	shortBreakDuration := loadEnvVarInt("SHORT_BREAK_DURATION", 300)
+	longBreakDuration := loadEnvVarInt("LONG_BREAK_DURATION", 900)
+
+	loop := false
+	loopVar := os.Getenv("LOOP")
+	if loopVar == "true" {
+		loop = true
+	}
+
 	task := "testing"
-	pomodoroDuration := 5 * time.Second   // Should be 25 minutes
-	shortBreakDuration := 3 * time.Second // Shouldbe 5 minutes
-	longBreakDuration := 2 * time.Second  // Shouldbe 20 minutes
-	pomodoro := models.NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration, task)
+	pomodoro := models.NewPomodoro(convertSecondsDuration(pomodoroDuration), convertSecondsDuration(shortBreakDuration), convertSecondsDuration(longBreakDuration), task, loop)
 
 	ch := make(chan pomodoroEventMessage, 32)
 	go func() {

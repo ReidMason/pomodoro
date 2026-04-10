@@ -1,0 +1,11 @@
+services:
+  pomodoro-server:
+    build:
+      context: .
+      dockerfile: dockerfile
+    environment:
+      POMODORO_DURATION: "1200"
+      SHORT_BREAK_DURATION: "300"
+      LONG_BREAK_DURATION: "900"
+    ports:
+      - "8080:8080"
