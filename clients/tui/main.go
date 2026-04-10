@@ -16,7 +16,7 @@ import (
 )
 
 type model struct {
-	text     string
+	time     time.Time
 	pomodoro models.Pomodoro
 }
 
@@ -94,7 +94,7 @@ func main() {
 
 func initModel(pomodoro models.Pomodoro) model {
 	return model{
-		text:     "Connecting...",
+		time:     getTime(),
 		pomodoro: pomodoro,
 	}
 }
@@ -116,7 +116,7 @@ type newPomodoroData models.Pomodoro
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		m.text = time.Time(msg).Format("01/02 03:04:05PM")
+		m.time = getTime()
 		return m, scheduleTick()
 	case newPomodoroData:
 		m.pomodoro = models.Pomodoro(msg)
@@ -130,15 +130,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func getTime() time.Time {
+	return time.Now()
+}
+
+func formatTimestamp(t time.Time) string {
+	return time.Time(t).Format("01/02 03:04:05PM")
+}
+
 func (m model) View() tea.View {
-	s := m.text
+	s := formatTimestamp(m.time)
 	s += "\n" + m.pomodoro.CycleStage.String()
-	s += formatTime(m.pomodoro.TimeRemaining)
+	s += formatTimeDuration(m.pomodoro.TimeRemaining)
 
 	return tea.NewView(s)
 }
 
-func formatTime(duration time.Duration) string {
+func formatTimeDuration(duration time.Duration) string {
 	d := max(duration, 0)
 	m := int(d / time.Minute)
 	s := int((d % time.Minute) / time.Second)
