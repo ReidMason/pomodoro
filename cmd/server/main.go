@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ReidMason/pomodoro/internal/domain/models"
-	usecases "github.com/ReidMason/pomodoro/internal/domain/useCases"
+	// usecases "github.com/ReidMason/pomodoro/internal/domain/useCases"
 )
 
 func main() {
@@ -23,6 +23,14 @@ func main() {
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Serving WS")
 		serveWs(hub, w, r)
+
+		body, err := json.Marshal(hub.Pomodoro)
+		if err != nil {
+			log.Println("failed to marshal response")
+			return
+		}
+
+		hub.broadcast <- body
 	})
 
 	startPom(hub)
@@ -96,6 +104,6 @@ func startPom(hub *Hub) {
 
 	hub.Pomodoro = pomodoro
 
-	startPomodoro := usecases.NewStartPomodoro(pomodoro)
-	startPomodoro.Handle()
+	// startPomodoro := usecases.NewStartPomodoro(pomodoro)
+	// startPomodoro.Handle()
 }

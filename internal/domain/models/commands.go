@@ -4,6 +4,7 @@ type CommandType int
 
 const (
 	UpdateTask CommandType = iota
+	Start
 )
 
 type Command struct {

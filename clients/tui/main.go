@@ -17,9 +17,10 @@ import (
 )
 
 type model struct {
-	time     time.Time
-	pomodoro models.Pomodoro
-	status   string
+	time      time.Time
+	pomodoro  models.Pomodoro
+	status    string
+	websocket *websocket.Conn
 }
 
 func dial(u url.URL) (*websocket.Conn, error) {
@@ -37,6 +38,7 @@ func dial(u url.URL) (*websocket.Conn, error) {
 }
 
 type connectionStatusUpdate string
+type websocketClientConnectedEvent *websocket.Conn
 
 func startWsClient(program *tea.Program, host string) {
 	interrupt := make(chan os.Signal, 1)
@@ -50,6 +52,7 @@ func startWsClient(program *tea.Program, host string) {
 		return
 	}
 	defer c.Close()
+	program.Send(websocketClientConnectedEvent(c))
 
 	done := make(chan struct{})
 
@@ -83,9 +86,6 @@ func startWsClient(program *tea.Program, host string) {
 			program.Send(connectionStatusUpdate("Connected"))
 		}
 	}()
-
-	//		ticker := time.NewTicker(time.Second)
-	//		defer ticker.Stop()
 
 	for {
 		select {
@@ -157,6 +157,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, scheduleTick()
 	case newPomodoroData:
 		m.pomodoro = models.Pomodoro(msg)
+	case websocketClientConnectedEvent:
+		m.websocket = msg
 	case connectionStatusUpdate:
 		m.status = string(msg)
 		return m, nil
@@ -164,6 +166,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "t":
+			m.status = "sending command"
+			updateTaskCommand := models.Command{
+				Type: models.Start,
+			}
+			payload, err := json.Marshal(updateTaskCommand)
+			if err != nil {
+				return m, nil
+			}
+			m.websocket.WriteMessage(websocket.TextMessage, payload)
+
+			// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
+			return m, nil
 		}
 	}
 
