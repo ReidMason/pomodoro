@@ -82,18 +82,14 @@ func (c *Client) handleMessage(message []byte) {
 	}
 
 	switch baseCommand.Type {
-	case models.UpdateTask:
-		var updateTaskCommand models.UpdateTaskCommand
-		err := json.Unmarshal([]byte(message), &updateTaskCommand)
+	case models.SetTask:
+		var setTaskCommand models.SetTaskCommand
+		err := json.Unmarshal([]byte(message), &setTaskCommand)
 		if err != nil {
-			log.Println("Invalid update task command:", string(message))
+			log.Println("Invalid setTaskCommand:", string(message))
 			return
 		}
-		log.Println("Updating task")
-		c.hub.Pomodoro.Task = updateTaskCommand.Task
-		log.Println(c.hub.Pomodoro)
-	case models.TogglePaused:
-		c.hub.Pomodoro.Paused = !c.hub.Pomodoro.Paused
+		c.hub.Pomodoro.SetTask(setTaskCommand.Task)
 	case models.Start:
 		c.hub.Pomodoro.Start()
 	default:

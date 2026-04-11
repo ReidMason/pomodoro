@@ -3,7 +3,7 @@ package models
 type CommandType int
 
 const (
-	UpdateTask CommandType = iota
+	SetTask CommandType = iota
 	Start
 	TogglePaused
 )
@@ -12,6 +12,7 @@ type Command struct {
 	Type CommandType `json:"type"`
 }
 
-type UpdateTaskCommand struct {
-	Task string `json:"task"`
+type SetTaskCommand struct {
+	Type CommandType `json:"type"`
+	Task string      `json:"task"`
 }
