@@ -92,6 +92,8 @@ func (c *Client) handleMessage(message []byte) {
 		log.Println("Updating task")
 		c.hub.Pomodoro.Task = updateTaskCommand.Task
 		log.Println(c.hub.Pomodoro)
+	case models.TogglePaused:
+		c.hub.Pomodoro.Paused = !c.hub.Pomodoro.Paused
 	case models.Start:
 		c.hub.Pomodoro.Start()
 	default:

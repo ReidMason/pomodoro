@@ -17,6 +17,7 @@ type Pomodoro struct {
 	shortBreakDuration time.Duration
 	longBreakDuration  time.Duration
 	loop               bool
+	Paused             bool `json:"paused"`
 }
 
 func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string, loop bool) *Pomodoro {
@@ -48,6 +49,9 @@ func runPomodoro(pomodoro *Pomodoro) State {
 	pomodoro.CycleStage = PomodoroStage
 	pomodoro.TimeRemaining = pomodoro.pomodoroDuration
 	for pomodoro.TimeRemaining > 0 {
+		if pomodoro.Paused {
+			continue
+		}
 		pomodoro.notifySubscribers(PomodoroSecondElapsed)
 		pomodoro.TimeRemaining -= time.Second
 		time.Sleep(time.Second)
@@ -67,6 +71,9 @@ func runShortBreak(pomodoro *Pomodoro) State {
 	pomodoro.CycleStage = ShortBreakStage
 	pomodoro.TimeRemaining = pomodoro.shortBreakDuration
 	for pomodoro.TimeRemaining > 0 {
+		if pomodoro.Paused {
+			continue
+		}
 		pomodoro.notifySubscribers(ShortBreakSecondElapsed)
 		pomodoro.TimeRemaining -= time.Second
 		time.Sleep(time.Second)
@@ -83,6 +90,9 @@ func runLongBreak(pomodoro *Pomodoro) State {
 	pomodoro.CycleStage = LongBreakStage
 	pomodoro.TimeRemaining = pomodoro.longBreakDuration
 	for pomodoro.TimeRemaining > 0 {
+		if pomodoro.Paused {
+			continue
+		}
 		pomodoro.notifySubscribers(LongBreakSecondElapsed)
 		pomodoro.TimeRemaining -= time.Second
 		time.Sleep(time.Second)

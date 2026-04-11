@@ -168,7 +168,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "t":
-			m.status = "sending command"
 			updateTaskCommand := models.Command{
 				Type: models.Start,
 			}
@@ -177,9 +176,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.websocket.WriteMessage(websocket.TextMessage, payload)
-
-			// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
 			return m, nil
+		case "p":
+			payload, err := json.Marshal(models.Command{
+				Type: models.TogglePaused,
+			})
+			if err != nil {
+				return m, nil
+			}
+			m.websocket.WriteMessage(websocket.TextMessage, payload)
+		case "s":
+			payload, err := json.Marshal(models.Command{
+				Type: models.Start,
+			})
+			if err != nil {
+				return m, nil
+			}
+			m.websocket.WriteMessage(websocket.TextMessage, payload)
 		}
 	}
 

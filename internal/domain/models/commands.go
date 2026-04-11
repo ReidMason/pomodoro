@@ -5,6 +5,7 @@ type CommandType int
 const (
 	UpdateTask CommandType = iota
 	Start
+	TogglePaused
 )
 
 type Command struct {
