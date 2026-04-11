@@ -10,30 +10,31 @@ import (
 	"time"
 
 	"github.com/ReidMason/pomodoro/internal/domain/models"
-	// usecases "github.com/ReidMason/pomodoro/internal/domain/useCases"
 )
+
+func sendPomodoroUpdate(hub *Hub) {
+	body, err := json.Marshal(hub.Pomodoro)
+	if err != nil {
+		log.Println("failed to marshal response")
+		return
+	}
+
+	hub.broadcast <- body
+}
 
 func main() {
 	hub := newHub()
+	pomodoro := createPomodoro(hub)
+	hub.Pomodoro = pomodoro
+
 	go hub.run()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Testing"))
-	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Serving WS")
 		serveWs(hub, w, r)
 
-		body, err := json.Marshal(hub.Pomodoro)
-		if err != nil {
-			log.Println("failed to marshal response")
-			return
-		}
-
-		hub.broadcast <- body
+		sendPomodoroUpdate(hub)
 	})
-
-	startPom(hub)
 
 	log.Println("Starting server")
 	port := os.Getenv("PORT")
@@ -69,7 +70,7 @@ func loadEnvVarInt(envVar string, defaultValue int) int {
 	return intValue
 }
 
-func startPom(hub *Hub) {
+func createPomodoro(hub *Hub) *models.Pomodoro {
 	pomodoroDuration := loadEnvVarInt("POMODORO_DURATION", 1200)
 	shortBreakDuration := loadEnvVarInt("SHORT_BREAK_DURATION", 300)
 	longBreakDuration := loadEnvVarInt("LONG_BREAK_DURATION", 900)
@@ -87,14 +88,7 @@ func startPom(hub *Hub) {
 	go func() {
 		for msg := range ch {
 			fmt.Println(msg.Event, msg.Pomodoro.GetTimeRemaining())
-
-			body, err := json.Marshal(msg.Pomodoro)
-			if err != nil {
-				log.Println("failed to marshal response")
-				return
-			}
-
-			hub.broadcast <- body
+			sendPomodoroUpdate(hub)
 		}
 	}()
 
@@ -102,8 +96,5 @@ func startPom(hub *Hub) {
 		ch <- pomodoroEventMessage{Event: e, Pomodoro: p}
 	})
 
-	hub.Pomodoro = pomodoro
-
-	// startPomodoro := usecases.NewStartPomodoro(pomodoro)
-	// startPomodoro.Handle()
+	return pomodoro
 }

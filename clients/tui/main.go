@@ -68,6 +68,7 @@ func startWsClient(program *tea.Program, host string) {
 					program.Send(connectionStatusUpdate("Connection lost"))
 					return
 				}
+				program.Send(websocketClientConnectedEvent(c))
 				continue
 			default:
 				if err != nil {
@@ -120,8 +121,8 @@ func main() {
 
 	pom := models.Pomodoro{}
 	m := initModel(pom)
-
 	p := tea.NewProgram(m)
+
 	go startWsClient(p, *host)
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Error starting program: %v", err)
