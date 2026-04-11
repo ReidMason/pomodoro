@@ -5,10 +5,10 @@ import (
 )
 
 type StartPomodoro struct {
-	pomodoro models.Pomodoro
+	pomodoro *models.Pomodoro
 }
 
-func NewStartPomodoro(pomodoro models.Pomodoro) *StartPomodoro {
+func NewStartPomodoro(pomodoro *models.Pomodoro) *StartPomodoro {
 	return &StartPomodoro{
 		pomodoro: pomodoro,
 	}

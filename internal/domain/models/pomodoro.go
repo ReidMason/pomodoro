@@ -5,7 +5,7 @@ import (
 )
 
 type SubscriberFunc func(event PomodoroEvent, p Pomodoro)
-type State func(pomodoro Pomodoro) (Pomodoro, State)
+type State func(pomodoro *Pomodoro) State
 
 type Pomodoro struct {
 	CycleStage         CycleStage    `json:"cycleStage"`
@@ -36,7 +36,7 @@ func (p *Pomodoro) AddSubscriber(subscriberFunc SubscriberFunc) {
 	p.subscribers = append(p.subscribers, subscriberFunc)
 }
 
-func (p Pomodoro) Start() {
+func (p *Pomodoro) Start() {
 	go run(p, runPomodoro)
 }
 
@@ -44,7 +44,7 @@ func (p Pomodoro) GetTimeRemaining() time.Duration {
 	return p.TimeRemaining
 }
 
-func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
+func runPomodoro(pomodoro *Pomodoro) State {
 	pomodoro.CycleStage = PomodoroStage
 	pomodoro.TimeRemaining = pomodoro.pomodoroDuration
 	for pomodoro.TimeRemaining > 0 {
@@ -57,12 +57,13 @@ func runPomodoro(pomodoro Pomodoro) (Pomodoro, State) {
 	time.Sleep(time.Second)
 	pomodoro.PomodorosCompleted++
 	if pomodoro.PomodorosCompleted >= 4 {
-		return pomodoro, runLongBreak
+		return runLongBreak
 	}
-	return pomodoro, runShortBreak
+
+	return runShortBreak
 }
 
-func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
+func runShortBreak(pomodoro *Pomodoro) State {
 	pomodoro.CycleStage = ShortBreakStage
 	pomodoro.TimeRemaining = pomodoro.shortBreakDuration
 	for pomodoro.TimeRemaining > 0 {
@@ -74,10 +75,10 @@ func runShortBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	pomodoro.notifySubscribers(ShortBreakDone)
 	time.Sleep(time.Second)
 
-	return pomodoro, runPomodoro
+	return runPomodoro
 }
 
-func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
+func runLongBreak(pomodoro *Pomodoro) State {
 	pomodoro.PomodorosCompleted = 0
 	pomodoro.CycleStage = LongBreakStage
 	pomodoro.TimeRemaining = pomodoro.longBreakDuration
@@ -91,18 +92,18 @@ func runLongBreak(pomodoro Pomodoro) (Pomodoro, State) {
 	time.Sleep(time.Second)
 
 	if pomodoro.loop {
-		return pomodoro, runPomodoro
+		return runPomodoro
 	}
 
-	return pomodoro, nil
+	return nil
 }
 
-func run(pomodoro Pomodoro, start State) Pomodoro {
+func run(pomodoro *Pomodoro, start State) {
 	current := start
 	for {
-		pomodoro, current = current(pomodoro)
+		current = current(pomodoro)
 		if current == nil {
-			return pomodoro
+			return
 		}
 	}
 }

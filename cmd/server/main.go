@@ -32,7 +32,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Println("Listening on port:", port)
+	log.Println("Listening on: ", port)
 	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
@@ -96,6 +96,6 @@ func startPom(hub *Hub) {
 
 	hub.Pomodoro = pomodoro
 
-	startPomodoro := usecases.NewStartPomodoro(*pomodoro)
+	startPomodoro := usecases.NewStartPomodoro(pomodoro)
 	startPomodoro.Handle()
 }

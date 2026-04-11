@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/ReidMason/pomodoro/internal/domain/models"
 	"github.com/gorilla/websocket"
 )
 
@@ -66,17 +68,35 @@ func (c *Client) readPump() {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 
-		c.handleMessage(string(message))
+		c.handleMessage(message)
 	}
 }
 
-func (c *Client) handleMessage(message string) {
-	switch message {
-	case "start":
-		c.hub.Pomodoro.Start()
-	default:
-		log.Printf("Unknown command: '%s'", message)
+func (c *Client) handleMessage(message []byte) {
+	log.Println("Got command:", string(message))
+	var baseCommand models.Command
+	err := json.Unmarshal([]byte(message), &baseCommand)
+	if err != nil {
+		log.Println("Invalid command:", string(message))
+		return
 	}
+
+	switch baseCommand.Type {
+	case models.UpdateTask:
+		var updateTaskCommand models.UpdateTaskCommand
+		err := json.Unmarshal([]byte(message), &updateTaskCommand)
+		if err != nil {
+			log.Println("Invalid update task command:", string(message))
+			return
+		}
+		log.Println("Updating task")
+		c.hub.Pomodoro.Task = updateTaskCommand.Task
+		log.Println(c.hub.Pomodoro)
+	default:
+		log.Println("Unknown command:", baseCommand.Type)
+	}
+
+	log.Println("end", baseCommand)
 }
 
 // writePump pumps messages from the hub to the websocket connection.
