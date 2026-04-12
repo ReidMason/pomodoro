@@ -1,4 +1,4 @@
-package models
+package pomodoro
 
 type PomodoroEvent int
 

@@ -1,6 +1,8 @@
 package main
 
-import "github.com/ReidMason/pomodoro/internal/domain/models"
+import (
+	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
+)
 
 type Hub struct {
 	// Registered clients.
@@ -15,7 +17,7 @@ type Hub struct {
 	// Unregister requests from clients.
 	deregister chan *Client
 
-	Pomodoro *models.Pomodoro
+	Pomodoro *pomodoro.Pomodoro
 }
 
 func newHub() *Hub {

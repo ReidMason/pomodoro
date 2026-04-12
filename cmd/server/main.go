@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ReidMason/pomodoro/internal/domain/models"
+	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 )
 
 func sendPomodoroUpdate(hub *Hub) {
@@ -49,8 +49,8 @@ func main() {
 }
 
 type pomodoroEventMessage struct {
-	Event    models.PomodoroEvent
-	Pomodoro models.Pomodoro
+	Event    pomodoro.PomodoroEvent
+	Pomodoro pomodoro.Pomodoro
 }
 
 func convertSecondsDuration(t int) time.Duration {
@@ -70,7 +70,7 @@ func loadEnvVarInt(envVar string, defaultValue int) int {
 	return intValue
 }
 
-func createPomodoro(hub *Hub) *models.Pomodoro {
+func createPomodoro(hub *Hub) *pomodoro.Pomodoro {
 	pomodoroDuration := loadEnvVarInt("POMODORO_DURATION", 1200)
 	shortBreakDuration := loadEnvVarInt("SHORT_BREAK_DURATION", 300)
 	longBreakDuration := loadEnvVarInt("LONG_BREAK_DURATION", 900)
@@ -81,7 +81,7 @@ func createPomodoro(hub *Hub) *models.Pomodoro {
 		loop = true
 	}
 
-	pomodoro := models.NewPomodoro(convertSecondsDuration(pomodoroDuration), convertSecondsDuration(shortBreakDuration), convertSecondsDuration(longBreakDuration), loop)
+	p := pomodoro.New(convertSecondsDuration(pomodoroDuration), convertSecondsDuration(shortBreakDuration), convertSecondsDuration(longBreakDuration), loop)
 
 	ch := make(chan pomodoroEventMessage, 32)
 	go func() {
@@ -91,9 +91,9 @@ func createPomodoro(hub *Hub) *models.Pomodoro {
 		}
 	}()
 
-	pomodoro.AddSubscriber(func(e models.PomodoroEvent, p models.Pomodoro) {
-		ch <- pomodoroEventMessage{Event: e, Pomodoro: p}
+	p.AddSubscriber(func(event pomodoro.PomodoroEvent, pomodoro pomodoro.Pomodoro) {
+		ch <- pomodoroEventMessage{Event: event, Pomodoro: pomodoro}
 	})
 
-	return pomodoro
+	return p
 }

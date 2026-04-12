@@ -1,14 +1,14 @@
 package usecases
 
 import (
-	"github.com/ReidMason/pomodoro/internal/domain/models"
+	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 )
 
 type StartPomodoro struct {
-	pomodoro *models.Pomodoro
+	pomodoro *pomodoro.Pomodoro
 }
 
-func NewStartPomodoro(pomodoro *models.Pomodoro) *StartPomodoro {
+func NewStartPomodoro(pomodoro *pomodoro.Pomodoro) *StartPomodoro {
 	return &StartPomodoro{
 		pomodoro: pomodoro,
 	}

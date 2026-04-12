@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ReidMason/pomodoro/internal/domain/models"
+	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 	"github.com/gorilla/websocket"
 
 	tea "charm.land/bubbletea/v2"
@@ -18,7 +19,7 @@ import (
 
 type model struct {
 	time      time.Time
-	pomodoro  models.PomodoroDto
+	pomodoro  pomodoro.PomodoroDto
 	status    string
 	websocket *websocket.Conn
 }
@@ -77,7 +78,7 @@ func startWsClient(program *tea.Program, host string) {
 				}
 			}
 
-			var pom models.PomodoroDto
+			var pom pomodoro.PomodoroDto
 			err = json.Unmarshal(message, &pom)
 			if err != nil {
 				program.Send(connectionStatusUpdate("Connection unstable, receiving bad data"))
@@ -119,7 +120,7 @@ func main() {
 		log.Fatal("Provide a server url")
 	}
 
-	pom := models.PomodoroDto{}
+	pom := pomodoro.PomodoroDto{}
 	m := initModel(pom)
 	p := tea.NewProgram(m)
 
@@ -129,7 +130,7 @@ func main() {
 	}
 }
 
-func initModel(pomodoro models.PomodoroDto) model {
+func initModel(pomodoro pomodoro.PomodoroDto) model {
 	return model{
 		time:     getTime(),
 		pomodoro: pomodoro,
@@ -149,7 +150,7 @@ func scheduleTick() tea.Cmd {
 	})
 }
 
-type newPomodoroData models.PomodoroDto
+type newPomodoroData pomodoro.PomodoroDto
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -157,7 +158,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.time = getTime()
 		return m, scheduleTick()
 	case newPomodoroData:
-		m.pomodoro = models.PomodoroDto(msg)
+		m.pomodoro = pomodoro.PomodoroDto(msg)
 	case websocketClientConnectedEvent:
 		m.websocket = msg
 	case connectionStatusUpdate:
@@ -168,7 +169,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "t":
-			setTaskCommand := models.SetTaskCommand{
+			setTaskCommand := pomodoro.SetTaskCommand{
 				Type: models.SetTask,
 				Task: formatTimestamp(time.Now()),
 			}
