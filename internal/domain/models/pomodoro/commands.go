@@ -1,9 +1,15 @@
 package pomodoro
 
-type Command int
+type Command struct {
+	Kind CommandKind
+	Task string
+}
+
+type CommandKind int
 
 const (
-	Start Command = iota
+	Start CommandKind = iota
+	SetTask
 )
 
-type commandHandler func(pomodoro *Pomodoro, command Command) State
+type commandHandler func(pomodoro *Pomodoro, command Command) (State, PomodoroEvent)

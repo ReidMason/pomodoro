@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ReidMason/pomodoro/internal/domain/models"
+	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 	"github.com/gorilla/websocket"
 )
 
@@ -74,7 +75,7 @@ func (c *Client) readPump() {
 
 func (c *Client) handleMessage(message []byte) {
 	log.Println("Got command:", string(message))
-	var baseCommand models.Command
+	var baseCommand models.Request
 	err := json.Unmarshal([]byte(message), &baseCommand)
 	if err != nil {
 		log.Println("Invalid command:", string(message))
@@ -89,7 +90,10 @@ func (c *Client) handleMessage(message []byte) {
 			log.Println("Invalid setTaskCommand:", string(message))
 			return
 		}
-		c.hub.Pomodoro.SetTask(setTaskCommand.Task)
+		c.hub.Pomodoro.HandleCommand(pomodoro.Command{
+			Kind: pomodoro.SetTask,
+			Task: setTaskCommand.Task,
+		})
 	case models.Start:
 		c.hub.Pomodoro.Start()
 	default:

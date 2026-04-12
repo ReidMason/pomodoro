@@ -47,21 +47,26 @@ func (p Pomodoro) ToDto() PomodoroDto {
 	}
 }
 
-func (p *Pomodoro) SetTask(task string) {
-	if p.state == PomodoroStage {
-		return
-	}
-
-	p.task = task
-	p.notifySubscribers(TaskUpdated)
-}
+// func (p *Pomodoro) SetTask(task string) {
+// 	if p.state == PomodoroStage {
+// 		return
+// 	}
+//
+// 	p.task = task
+// 	p.notifySubscribers(TaskUpdated)
+// }
 
 func (p *Pomodoro) AddSubscriber(subscriberFunc SubscriberFunc) {
 	p.subscribers = append(p.subscribers, subscriberFunc)
 }
 
 func (p *Pomodoro) HandleCommand(command Command) {
-	p.state = p.state.HandleCommand(p, command)
+	state, event := p.state.HandleCommand(p, command)
+	p.state = state
+
+	if event != None {
+		p.notifySubscribers(event)
+	}
 }
 
 func (p *Pomodoro) Start() {

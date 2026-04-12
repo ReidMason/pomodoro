@@ -3,7 +3,8 @@ package pomodoro
 type PomodoroEvent int
 
 const (
-	PomodoroSecondElapsed PomodoroEvent = iota
+	None PomodoroEvent = iota
+	PomodoroSecondElapsed
 	PomodoroDone
 	ShortBreakSecondElapsed
 	ShortBreakDone
