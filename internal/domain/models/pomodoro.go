@@ -7,24 +7,31 @@ import (
 type SubscriberFunc func(event PomodoroEvent, p Pomodoro)
 type State func(pomodoro *Pomodoro) State
 
+type PomodoroDto struct {
+	CycleStage        CycleStage    `json:"cycleStage"`
+	Task              string        `json:"task"`
+	TimeRemaining     time.Duration `json:"timeRemaining"`
+	PomodoriCompleted int           `json:"pomodorosCompleted"`
+}
+
 type Pomodoro struct {
-	CycleStage         CycleStage    `json:"cycleStage"`
-	Task               string        `json:"task"`
-	TimeRemaining      time.Duration `json:"timeRemaining"`
+	cycleStage         CycleStage
+	task               string
+	timeRemaining      time.Duration
 	subscribers        []SubscriberFunc
-	PomodorosCompleted int `json:"pomodorosCompleted"`
+	pomodoriCompleted  int
 	pomodoroDuration   time.Duration
 	shortBreakDuration time.Duration
 	longBreakDuration  time.Duration
 	loop               bool
 }
 
-func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, task string, loop bool) *Pomodoro {
+func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, loop bool) *Pomodoro {
 	return &Pomodoro{
-		CycleStage:         Idle,
-		Task:               task,
-		TimeRemaining:      0,
-		PomodorosCompleted: 0,
+		cycleStage:         Idle,
+		task:               "",
+		timeRemaining:      0,
+		pomodoriCompleted:  0,
 		pomodoroDuration:   pomodoroDuration,
 		shortBreakDuration: shortBreakDuration,
 		longBreakDuration:  longBreakDuration,
@@ -32,12 +39,21 @@ func NewPomodoro(pomodoroDuration, shortBreakDuration, longBreakDuration time.Du
 	}
 }
 
+func (p Pomodoro) ToDto() PomodoroDto {
+	return PomodoroDto{
+		CycleStage:        p.cycleStage,
+		Task:              p.task,
+		TimeRemaining:     p.timeRemaining,
+		PomodoriCompleted: p.pomodoriCompleted,
+	}
+}
+
 func (p *Pomodoro) SetTask(task string) {
-	if p.CycleStage == PomodoroStage {
+	if p.cycleStage == PomodoroStage {
 		return
 	}
 
-	p.Task = task
+	p.task = task
 	p.notifySubscribers(TaskUpdated)
 }
 
@@ -46,26 +62,30 @@ func (p *Pomodoro) AddSubscriber(subscriberFunc SubscriberFunc) {
 }
 
 func (p *Pomodoro) Start() {
+	if p.task == "" {
+		return
+	}
+
 	go run(p, runPomodoro)
 }
 
 func (p Pomodoro) GetTimeRemaining() time.Duration {
-	return p.TimeRemaining
+	return p.timeRemaining
 }
 
 func runPomodoro(pomodoro *Pomodoro) State {
-	pomodoro.CycleStage = PomodoroStage
-	pomodoro.TimeRemaining = pomodoro.pomodoroDuration
-	for pomodoro.TimeRemaining > 0 {
+	pomodoro.cycleStage = PomodoroStage
+	pomodoro.timeRemaining = pomodoro.pomodoroDuration
+	for pomodoro.timeRemaining > 0 {
 		pomodoro.notifySubscribers(PomodoroSecondElapsed)
-		pomodoro.TimeRemaining -= time.Second
+		pomodoro.timeRemaining -= time.Second
 		time.Sleep(time.Second)
 	}
 
 	pomodoro.notifySubscribers(PomodoroDone)
 	time.Sleep(time.Second)
-	pomodoro.PomodorosCompleted++
-	if pomodoro.PomodorosCompleted >= 4 {
+	pomodoro.pomodoriCompleted++
+	if pomodoro.pomodoriCompleted >= 4 {
 		return runLongBreak
 	}
 
@@ -73,11 +93,11 @@ func runPomodoro(pomodoro *Pomodoro) State {
 }
 
 func runShortBreak(pomodoro *Pomodoro) State {
-	pomodoro.CycleStage = ShortBreakStage
-	pomodoro.TimeRemaining = pomodoro.shortBreakDuration
-	for pomodoro.TimeRemaining > 0 {
+	pomodoro.cycleStage = ShortBreakStage
+	pomodoro.timeRemaining = pomodoro.shortBreakDuration
+	for pomodoro.timeRemaining > 0 {
 		pomodoro.notifySubscribers(ShortBreakSecondElapsed)
-		pomodoro.TimeRemaining -= time.Second
+		pomodoro.timeRemaining -= time.Second
 		time.Sleep(time.Second)
 	}
 
@@ -88,12 +108,12 @@ func runShortBreak(pomodoro *Pomodoro) State {
 }
 
 func runLongBreak(pomodoro *Pomodoro) State {
-	pomodoro.PomodorosCompleted = 0
-	pomodoro.CycleStage = LongBreakStage
-	pomodoro.TimeRemaining = pomodoro.longBreakDuration
-	for pomodoro.TimeRemaining > 0 {
+	pomodoro.pomodoriCompleted = 0
+	pomodoro.cycleStage = LongBreakStage
+	pomodoro.timeRemaining = pomodoro.longBreakDuration
+	for pomodoro.timeRemaining > 0 {
 		pomodoro.notifySubscribers(LongBreakSecondElapsed)
-		pomodoro.TimeRemaining -= time.Second
+		pomodoro.timeRemaining -= time.Second
 		time.Sleep(time.Second)
 	}
 

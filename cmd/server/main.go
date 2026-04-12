@@ -13,7 +13,7 @@ import (
 )
 
 func sendPomodoroUpdate(hub *Hub) {
-	body, err := json.Marshal(hub.Pomodoro)
+	body, err := json.Marshal(hub.Pomodoro.ToDto())
 	if err != nil {
 		log.Println("failed to marshal response")
 		return
@@ -81,8 +81,7 @@ func createPomodoro(hub *Hub) *models.Pomodoro {
 		loop = true
 	}
 
-	task := "testing"
-	pomodoro := models.NewPomodoro(convertSecondsDuration(pomodoroDuration), convertSecondsDuration(shortBreakDuration), convertSecondsDuration(longBreakDuration), task, loop)
+	pomodoro := models.NewPomodoro(convertSecondsDuration(pomodoroDuration), convertSecondsDuration(shortBreakDuration), convertSecondsDuration(longBreakDuration), loop)
 
 	ch := make(chan pomodoroEventMessage, 32)
 	go func() {
