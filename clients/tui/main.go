@@ -15,6 +15,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type model struct {
@@ -204,15 +205,19 @@ func formatTimestamp(t time.Time) string {
 }
 
 func (m model) View() tea.View {
+	style := lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder())
+
 	s := formatTimestamp(m.time) + "\n"
 	s += "Task: " + m.pomodoro.Task
+	s += fmt.Sprintf("\nPomodori: %d/4", m.pomodoro.PomodoriCompleted%4+1)
 	s += "\n" + m.pomodoro.CycleStage.String()
 
 	remaining := time.Until(m.pomodoro.PhaseEndsAt)
 	s += formatTimeDuration(remaining)
 	s += "\n\n" + m.status
 
-	return tea.NewView(s)
+	return tea.NewView(style.Render(s))
 }
 
 func formatTimeDuration(duration time.Duration) string {
