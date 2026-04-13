@@ -16,7 +16,7 @@ type PomodoroDto struct {
 type Pomodoro struct {
 	state              State
 	task               string
-	timeRemaining      time.Duration
+	phaseEndsAt        time.Time
 	subscribers        []SubscriberFunc
 	pomodoriCompleted  int
 	pomodoroDuration   time.Duration
@@ -29,7 +29,6 @@ func New(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, 
 	return &Pomodoro{
 		state:              Idle,
 		task:               "",
-		timeRemaining:      0,
 		pomodoriCompleted:  0,
 		pomodoroDuration:   pomodoroDuration,
 		shortBreakDuration: shortBreakDuration,
@@ -42,19 +41,10 @@ func (p Pomodoro) ToDto() PomodoroDto {
 	return PomodoroDto{
 		CycleStage:        p.state,
 		Task:              p.task,
-		TimeRemaining:     p.timeRemaining,
+		TimeRemaining:     time.Until(p.phaseEndsAt),
 		PomodoriCompleted: p.pomodoriCompleted,
 	}
 }
-
-// func (p *Pomodoro) SetTask(task string) {
-// 	if p.state == PomodoroStage {
-// 		return
-// 	}
-//
-// 	p.task = task
-// 	p.notifySubscribers(TaskUpdated)
-// }
 
 func (p *Pomodoro) AddSubscriber(subscriberFunc SubscriberFunc) {
 	p.subscribers = append(p.subscribers, subscriberFunc)
@@ -67,18 +57,6 @@ func (p *Pomodoro) HandleCommand(command Command) {
 	if event != None {
 		p.notifySubscribers(event)
 	}
-}
-
-func (p *Pomodoro) Start() {
-	if p.task == "" {
-		return
-	}
-
-	// go run(p, runPomodoro)
-}
-
-func (p Pomodoro) GetTimeRemaining() time.Duration {
-	return p.timeRemaining
 }
 
 func (p Pomodoro) notifySubscribers(event PomodoroEvent) {

@@ -86,7 +86,7 @@ func createPomodoro(hub *Hub) *pomodoro.Pomodoro {
 	ch := make(chan pomodoroEventMessage, 32)
 	go func() {
 		for msg := range ch {
-			fmt.Println(msg.Event, msg.Pomodoro.GetTimeRemaining())
+			fmt.Println(msg.Event, msg.Pomodoro.ToDto().TimeRemaining)
 			sendPomodoroUpdate(hub)
 		}
 	}()

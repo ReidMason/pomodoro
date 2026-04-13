@@ -15,5 +15,5 @@ func NewStartPomodoro(pomodoro *pomodoro.Pomodoro) *StartPomodoro {
 }
 
 func (sp *StartPomodoro) Handle() {
-	sp.pomodoro.Start()
+	// sp.pomodoro.Start()
 }

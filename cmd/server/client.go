@@ -82,9 +82,9 @@ func (c *Client) handleMessage(message []byte) {
 		return
 	}
 
-	switch baseCommand.Type {
+	switch baseCommand.Kind {
 	case models.SetTask:
-		var setTaskCommand models.SetTaskCommand
+		var setTaskCommand models.SetTaskRequest
 		err := json.Unmarshal([]byte(message), &setTaskCommand)
 		if err != nil {
 			log.Println("Invalid setTaskCommand:", string(message))
@@ -95,9 +95,11 @@ func (c *Client) handleMessage(message []byte) {
 			Task: setTaskCommand.Task,
 		})
 	case models.Start:
-		c.hub.Pomodoro.Start()
+		c.hub.Pomodoro.HandleCommand(pomodoro.Command{
+			Kind: pomodoro.Start,
+		})
 	default:
-		log.Println("Unknown command:", baseCommand.Type)
+		log.Println("Unknown command:", baseCommand.Kind)
 	}
 
 	log.Println("end", baseCommand)

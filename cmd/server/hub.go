@@ -1,6 +1,9 @@
 package main
 
 import (
+	"slices"
+	"time"
+
 	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 )
 
@@ -17,7 +20,9 @@ type Hub struct {
 	// Unregister requests from clients.
 	deregister chan *Client
 
-	Pomodoro *pomodoro.Pomodoro
+	Pomodoro   *pomodoro.Pomodoro
+	ticker     *time.Ticker
+	tickerSync chan struct{}
 }
 
 func newHub() *Hub {
@@ -26,12 +31,43 @@ func newHub() *Hub {
 		register:   make(chan *Client),
 		deregister: make(chan *Client),
 		clients:    make(map[*Client]struct{}),
+		tickerSync: make(chan struct{}, 1),
+	}
+}
+
+func (h *Hub) syncTicker() {
+	pom := h.Pomodoro.ToDto()
+	statesThatNeedTicks := []pomodoro.State{
+		pomodoro.PomodoroInProgress,
+		pomodoro.ShortBreakInProgress,
+		pomodoro.LongBreakInProgress,
+	}
+
+	if pom.CycleStage == pomodoro.Idle && h.ticker != nil {
+		h.ticker.Stop()
+	} else if slices.Contains(statesThatNeedTicks, pom.CycleStage) && h.ticker == nil {
+		h.ticker = time.NewTicker(time.Second)
 	}
 }
 
 func (h *Hub) run() {
+	h.Pomodoro.AddSubscriber(func(event pomodoro.PomodoroEvent, p pomodoro.Pomodoro) {
+		h.tickerSync <- struct{}{}
+	})
+
 	for {
+		var tickCh <-chan time.Time
+		if h.ticker != nil {
+			tickCh = h.ticker.C
+		}
+
 		select {
+		case <-tickCh:
+			h.Pomodoro.HandleCommand(pomodoro.Command{
+				Kind: pomodoro.Tick,
+			})
+		case <-h.tickerSync:
+			h.syncTicker()
 		case client := <-h.register:
 			h.clients[client] = struct{}{}
 		case client := <-h.deregister:

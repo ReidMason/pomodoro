@@ -1,18 +1,17 @@
 package models
 
-type RequestType int
+type RequestKind int
 
 const (
-	SetTask RequestType = iota
+	SetTask RequestKind = iota
 	Start
-	TogglePaused
 )
 
 type Request struct {
-	Type RequestType `json:"type"`
+	Kind RequestKind `json:"type"`
 }
 
-type SetTaskCommand struct {
-	Type RequestType `json:"type"`
+type SetTaskRequest struct {
+	Kind RequestKind `json:"type"`
 	Task string      `json:"task"`
 }

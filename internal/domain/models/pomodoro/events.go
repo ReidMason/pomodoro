@@ -4,18 +4,24 @@ type PomodoroEvent int
 
 const (
 	None PomodoroEvent = iota
+
+	PomodoroStarted
 	PomodoroSecondElapsed
-	PomodoroDone
+
+	ShortBreakStarted
 	ShortBreakSecondElapsed
 	ShortBreakDone
+
+	LongBreakStarted
 	LongBreakSecondElapsed
 	LongBreakDone
+
 	TaskUpdated
 )
 
 var eventNameMapping = map[PomodoroEvent]string{
+	PomodoroStarted:         "Pomodoro.Started",
 	PomodoroSecondElapsed:   "Pomodoro.SecondElapsed",
-	PomodoroDone:            "Pomodoro.Done",
 	ShortBreakSecondElapsed: "ShortBreak.SecondElapsed",
 	ShortBreakDone:          "ShortBreak.Done",
 	LongBreakSecondElapsed:  "LongBreak.SecondElapsed",
