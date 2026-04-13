@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -86,7 +85,7 @@ func createPomodoro(hub *Hub) *pomodoro.Pomodoro {
 	ch := make(chan pomodoroEventMessage, 32)
 	go func() {
 		for msg := range ch {
-			fmt.Println(msg.Event, msg.Pomodoro.ToDto().TimeRemaining)
+			log.Println("Event:", msg.Event.String())
 			sendPomodoroUpdate(hub)
 		}
 	}()

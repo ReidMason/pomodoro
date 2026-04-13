@@ -7,6 +7,8 @@ import (
 	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 )
 
+const TICK_INTERVAL = time.Millisecond * 100
+
 type Hub struct {
 	// Registered clients.
 	clients map[*Client]struct{}
@@ -46,7 +48,7 @@ func (h *Hub) syncTicker() {
 	if pom.CycleStage == pomodoro.Idle && h.ticker != nil {
 		h.ticker.Stop()
 	} else if slices.Contains(statesThatNeedTicks, pom.CycleStage) && h.ticker == nil {
-		h.ticker = time.NewTicker(time.Second)
+		h.ticker = time.NewTicker(TICK_INTERVAL)
 	}
 }
 

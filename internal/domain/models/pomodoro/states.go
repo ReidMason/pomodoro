@@ -60,7 +60,7 @@ func HandleCommandPomodoroInProgress(pomodoro *Pomodoro, command Command) (State
 			return ShortBreakInProgress, ShortBreakStarted
 		}
 
-		return PomodoroInProgress, SecondElapsed
+		return PomodoroInProgress, None
 	}
 
 	return PomodoroInProgress, None
@@ -75,7 +75,7 @@ func HandleCommandShortBreakInProgress(pomodoro *Pomodoro, command Command) (Sta
 			return PomodoroInProgress, PomodoroStarted
 		}
 
-		return ShortBreakInProgress, SecondElapsed
+		return ShortBreakInProgress, None
 	}
 
 	return ShortBreakInProgress, None
@@ -89,7 +89,7 @@ func HandleCommandLongBreakInProgress(pomodoro *Pomodoro, command Command) (Stat
 			return Idle, LongBreakDone
 		}
 
-		return LongBreakInProgress, SecondElapsed
+		return LongBreakInProgress, None
 	}
 
 	return LongBreakInProgress, None

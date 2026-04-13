@@ -13,15 +13,19 @@ const (
 	LongBreakStarted
 	LongBreakDone
 
-	SecondElapsed
 	TaskUpdated
 )
 
 var eventNameMapping = map[PomodoroEvent]string{
 	PomodoroStarted: "Pomodoro.Started",
-	ShortBreakDone:  "ShortBreak.Done",
-	LongBreakDone:   "LongBreak.Done",
-	TaskUpdated:     "TaskUpdated",
+
+	ShortBreakStarted: "ShortBreak.Started",
+	ShortBreakDone:    "ShortBreak.Done",
+
+	LongBreakStarted: "LongBreak.Started",
+	LongBreakDone:    "LongBreak.Done",
+
+	TaskUpdated: "TaskUpdated",
 }
 
 func (pe PomodoroEvent) String() string {

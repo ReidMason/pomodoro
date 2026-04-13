@@ -7,10 +7,10 @@ import (
 type SubscriberFunc func(event PomodoroEvent, p Pomodoro)
 
 type PomodoroDto struct {
-	CycleStage        State         `json:"cycleStage"`
-	Task              string        `json:"task"`
-	TimeRemaining     time.Duration `json:"timeRemaining"`
-	PomodoriCompleted int           `json:"pomodorosCompleted"`
+	CycleStage        State     `json:"cycleStage"`
+	Task              string    `json:"task"`
+	PhaseEndsAt       time.Time `json:"phaseEndsAt"`
+	PomodoriCompleted int       `json:"pomodorosCompleted"`
 }
 
 type Pomodoro struct {
@@ -38,10 +38,11 @@ func New(pomodoroDuration, shortBreakDuration, longBreakDuration time.Duration, 
 }
 
 func (p Pomodoro) ToDto() PomodoroDto {
+
 	return PomodoroDto{
 		CycleStage:        p.state,
 		Task:              p.task,
-		TimeRemaining:     time.Until(p.phaseEndsAt),
+		PhaseEndsAt:       p.phaseEndsAt,
 		PomodoriCompleted: p.pomodoriCompleted,
 	}
 }

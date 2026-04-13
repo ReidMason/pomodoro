@@ -145,7 +145,9 @@ func (m model) Init() tea.Cmd {
 type tickMsg time.Time
 
 func scheduleTick() tea.Cmd {
-	return tea.Every(time.Second, func(t time.Time) tea.Msg {
+	tickSpeed := time.Second
+
+	return tea.Every(tickSpeed, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
@@ -205,7 +207,9 @@ func (m model) View() tea.View {
 	s := formatTimestamp(m.time) + "\n"
 	s += "Task: " + m.pomodoro.Task
 	s += "\n" + m.pomodoro.CycleStage.String()
-	s += formatTimeDuration(m.pomodoro.TimeRemaining)
+
+	remaining := time.Until(m.pomodoro.PhaseEndsAt)
+	s += formatTimeDuration(remaining)
 	s += "\n\n" + m.status
 
 	return tea.NewView(s)
@@ -215,5 +219,6 @@ func formatTimeDuration(duration time.Duration) string {
 	d := max(duration, 0)
 	m := int(d / time.Minute)
 	s := int((d % time.Minute) / time.Second)
-	return fmt.Sprintf("\n%d:%02d", m, s)
+	ms := int((d % time.Second) / time.Millisecond)
+	return fmt.Sprintf("\n%d:%02d.%03d", m, s, ms)
 }
