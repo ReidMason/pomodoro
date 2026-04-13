@@ -47,6 +47,7 @@ func (h *Hub) syncTicker() {
 
 	if pom.CycleStage == pomodoro.Idle && h.ticker != nil {
 		h.ticker.Stop()
+		h.ticker = nil
 	} else if slices.Contains(statesThatNeedTicks, pom.CycleStage) && h.ticker == nil {
 		h.ticker = time.NewTicker(TICK_INTERVAL)
 	}
