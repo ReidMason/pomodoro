@@ -71,8 +71,7 @@ func HandleCommandShortBreakInProgress(pomodoro *Pomodoro, command Command) (Sta
 	case Tick:
 		remaining := time.Until(pomodoro.phaseEndsAt)
 		if remaining <= 0 {
-			pomodoro.phaseEndsAt = time.Now().Add(pomodoro.pomodoroDuration)
-			return PomodoroInProgress, PomodoroStarted
+			return Idle, ShortBreakDone
 		}
 
 		return ShortBreakInProgress, None
