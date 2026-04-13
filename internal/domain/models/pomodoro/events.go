@@ -6,27 +6,22 @@ const (
 	None PomodoroEvent = iota
 
 	PomodoroStarted
-	PomodoroSecondElapsed
 
 	ShortBreakStarted
-	ShortBreakSecondElapsed
 	ShortBreakDone
 
 	LongBreakStarted
-	LongBreakSecondElapsed
 	LongBreakDone
 
+	SecondElapsed
 	TaskUpdated
 )
 
 var eventNameMapping = map[PomodoroEvent]string{
-	PomodoroStarted:         "Pomodoro.Started",
-	PomodoroSecondElapsed:   "Pomodoro.SecondElapsed",
-	ShortBreakSecondElapsed: "ShortBreak.SecondElapsed",
-	ShortBreakDone:          "ShortBreak.Done",
-	LongBreakSecondElapsed:  "LongBreak.SecondElapsed",
-	LongBreakDone:           "LongBreak.Done",
-	TaskUpdated:             "TaskUpdated",
+	PomodoroStarted: "Pomodoro.Started",
+	ShortBreakDone:  "ShortBreak.Done",
+	LongBreakDone:   "LongBreak.Done",
+	TaskUpdated:     "TaskUpdated",
 }
 
 func (pe PomodoroEvent) String() string {

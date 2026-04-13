@@ -51,11 +51,16 @@ func HandleCommandPomodoroInProgress(pomodoro *Pomodoro, command Command) (State
 	case Tick:
 		remaining := time.Until(pomodoro.phaseEndsAt)
 		if remaining <= 0 {
+			pomodoro.pomodoriCompleted++
+			if pomodoro.pomodoriCompleted%4 == 0 {
+				pomodoro.phaseEndsAt = time.Now().Add(pomodoro.longBreakDuration)
+				return LongBreakInProgress, LongBreakStarted
+			}
 			pomodoro.phaseEndsAt = time.Now().Add(pomodoro.shortBreakDuration)
 			return ShortBreakInProgress, ShortBreakStarted
 		}
 
-		return PomodoroInProgress, PomodoroSecondElapsed
+		return PomodoroInProgress, SecondElapsed
 	}
 
 	return PomodoroInProgress, None
@@ -70,7 +75,7 @@ func HandleCommandShortBreakInProgress(pomodoro *Pomodoro, command Command) (Sta
 			return PomodoroInProgress, PomodoroStarted
 		}
 
-		return ShortBreakInProgress, ShortBreakSecondElapsed
+		return ShortBreakInProgress, SecondElapsed
 	}
 
 	return ShortBreakInProgress, None
@@ -78,9 +83,13 @@ func HandleCommandShortBreakInProgress(pomodoro *Pomodoro, command Command) (Sta
 
 func HandleCommandLongBreakInProgress(pomodoro *Pomodoro, command Command) (State, PomodoroEvent) {
 	switch command.Kind {
-	case SetTask:
-		pomodoro.task = command.Task
-		return Idle, TaskUpdated
+	case Tick:
+		remaining := time.Until(pomodoro.phaseEndsAt)
+		if remaining <= 0 {
+			return Idle, LongBreakDone
+		}
+
+		return LongBreakInProgress, SecondElapsed
 	}
 
 	return LongBreakInProgress, None
