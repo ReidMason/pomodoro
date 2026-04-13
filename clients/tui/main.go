@@ -14,20 +14,32 @@ import (
 	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 	"github.com/gorilla/websocket"
 
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
+type connectionStatus int
+
+const (
+	connecting connectionStatus = iota
+	connectionLostReconnecting
+	connectionLost
+	connected
+	reconnecting
+)
+
 type model struct {
-	time      time.Time
-	pomodoro  pomodoro.PomodoroDto
-	status    string
-	websocket *websocket.Conn
+	time             time.Time
+	pomodoro         pomodoro.PomodoroDto
+	connectionStatus connectionStatus
+	websocket        *websocket.Conn
+
+	spinner spinner.Model
 }
 
 func dial(u url.URL) (*websocket.Conn, error) {
-	var err error
-	for range 30 {
+	for {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 		if err != nil {
 			time.Sleep(time.Second)
@@ -35,11 +47,9 @@ func dial(u url.URL) (*websocket.Conn, error) {
 		}
 		return c, nil
 	}
-
-	return nil, err
 }
 
-type connectionStatusUpdate string
+type connectionStatusUpdate connectionStatus
 type websocketClientConnectedEvent *websocket.Conn
 
 func startWsClient(program *tea.Program, host string) {
@@ -64,17 +74,17 @@ func startWsClient(program *tea.Program, host string) {
 			_, message, err := c.ReadMessage()
 			switch err.(type) {
 			case *websocket.CloseError:
-				program.Send(connectionStatusUpdate("Connection lost, reconnecting..."))
+				program.Send(connectionStatusUpdate(connectionLostReconnecting))
 				c, err = dial(u)
 				if err != nil {
-					program.Send(connectionStatusUpdate("Connection lost"))
+					program.Send(connectionStatusUpdate(connectionLost))
 					return
 				}
 				program.Send(websocketClientConnectedEvent(c))
 				continue
 			default:
 				if err != nil {
-					program.Send(connectionStatusUpdate("Connection unstable, unable to read messages"))
+					// program.Send(connectionStatusUpdate("Connection unstable, unable to read messages"))
 					return
 				}
 			}
@@ -82,11 +92,11 @@ func startWsClient(program *tea.Program, host string) {
 			var pom pomodoro.PomodoroDto
 			err = json.Unmarshal(message, &pom)
 			if err != nil {
-				program.Send(connectionStatusUpdate("Connection unstable, receiving bad data"))
+				// program.Send(connectionStatusUpdate("Connection unstable, receiving bad data"))
 				continue
 			}
 			program.Send(newPomodoroData(pom))
-			program.Send(connectionStatusUpdate("Connected"))
+			program.Send(connectionStatusUpdate(connected))
 		}
 	}()
 
@@ -133,14 +143,15 @@ func main() {
 
 func initModel(pomodoro pomodoro.PomodoroDto) model {
 	return model{
-		time:     getTime(),
-		pomodoro: pomodoro,
-		status:   "Connecting...",
+		time:             getTime(),
+		pomodoro:         pomodoro,
+		connectionStatus: connecting,
+		spinner:          spinner.New(),
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return scheduleTick()
+	return tea.Batch(scheduleTick(), m.spinner.Tick)
 }
 
 type tickMsg time.Time
@@ -165,7 +176,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case websocketClientConnectedEvent:
 		m.websocket = msg
 	case connectionStatusUpdate:
-		m.status = string(msg)
+		m.connectionStatus = connectionStatus(msg)
 		return m, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -191,6 +202,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.websocket.WriteMessage(websocket.TextMessage, payload)
 		}
+	default:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 	}
 
 	return m, nil
@@ -215,7 +230,20 @@ func (m model) View() tea.View {
 
 	remaining := time.Until(m.pomodoro.PhaseEndsAt)
 	s += formatTimeDuration(remaining)
-	s += "\n\n" + m.status
+
+	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+	statusString := "unknown"
+	switch m.connectionStatus {
+	case connecting:
+		statusString = m.spinner.View() + " Connecting..."
+	case connected:
+		statusStyle = statusStyle.Foreground(lipgloss.Green)
+		statusString = "Connected"
+	}
+
+	s += fmt.Sprintf("\n\n%s", statusStyle.Render(statusString))
+
+	// s += "\n\n" + helpStyle(m.connectionStatus)
 
 	return tea.NewView(style.Render(s))
 }
