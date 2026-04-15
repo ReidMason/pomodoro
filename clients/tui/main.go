@@ -175,12 +175,26 @@ func scheduleTick() tea.Cmd {
 }
 
 type newPomodoroData pomodoro.PomodoroDto
+type startSettingTask struct{}
+type stopSettingTask struct{}
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
 		m.time = getTime()
 		return m, scheduleTick()
+	case startSettingTask:
+		if m.settingTask {
+			return m, nil
+		}
+
+		m.settingTask = true
+		m.textInput.Focus()
+		return m, nil
+	case stopSettingTask:
+		m.settingTask = false
+		m.textInput.SetValue("")
+		return m, nil
 	case newPomodoroData:
 		m.pomodoro = pomodoro.PomodoroDto(msg)
 	case websocketClientConnectedEvent:
@@ -200,11 +214,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 var submitBinding = key.NewBinding(key.WithKeys("enter"))
+var escBinding = key.NewBinding(key.WithKeys("esc", "escape"))
 
 func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c", "q":
 		return m, tea.Quit
+	}
+
+	if m.textInput.Focused() && key.Matches(msg, escBinding) {
+		return m, func() tea.Msg { return stopSettingTask{} }
 	}
 
 	if m.textInput.Focused() && key.Matches(msg, submitBinding) {
@@ -219,8 +238,7 @@ func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 			return m, nil
 		}
 		m.websocket.WriteMessage(websocket.TextMessage, payload)
-		m.settingTask = false
-		return m, nil
+		return m, func() tea.Msg { return stopSettingTask{} }
 	}
 
 	if m.settingTask && m.textInput.Focused() {
@@ -231,14 +249,7 @@ func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 
 	switch msg.String() {
 	case "t":
-		if m.settingTask {
-			return m, nil
-		}
-
-		m.settingTask = true
-		m.textInput.Focus()
-
-		return m, nil
+		return m, func() tea.Msg { return startSettingTask{} }
 	case "s":
 		payload, err := json.Marshal(models.Request{
 			Kind: models.Start,
