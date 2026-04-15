@@ -14,7 +14,9 @@ import (
 	"github.com/ReidMason/pomodoro/internal/domain/models/pomodoro"
 	"github.com/gorilla/websocket"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -35,7 +37,9 @@ type model struct {
 	connectionStatus connectionStatus
 	websocket        *websocket.Conn
 
-	spinner spinner.Model
+	spinner     spinner.Model
+	settingTask bool
+	textInput   textinput.Model
 }
 
 func dial(u url.URL) (*websocket.Conn, error) {
@@ -142,16 +146,22 @@ func main() {
 }
 
 func initModel(pomodoro pomodoro.PomodoroDto) model {
+	ti := textinput.New()
+	ti.Placeholder = "Task name"
+	ti.SetVirtualCursor(true)
+
 	return model{
 		time:             getTime(),
 		pomodoro:         pomodoro,
 		connectionStatus: connecting,
 		spinner:          spinner.New(),
+		settingTask:      false,
+		textInput:        ti,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(scheduleTick(), m.spinner.Tick)
+	return tea.Batch(scheduleTick(), m.spinner.Tick, textinput.Blink)
 }
 
 type tickMsg time.Time
@@ -179,33 +189,64 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.connectionStatus = connectionStatus(msg)
 		return m, nil
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "t":
-			setTaskCommand := models.SetTaskRequest{
-				Kind: models.SetTask,
-				Task: formatTimestamp(time.Now()),
-			}
-			payload, err := json.Marshal(setTaskCommand)
-			if err != nil {
-				return m, nil
-			}
-			m.websocket.WriteMessage(websocket.TextMessage, payload)
-			return m, nil
-		case "s":
-			payload, err := json.Marshal(models.Request{
-				Kind: models.Start,
-			})
-			if err != nil {
-				return m, nil
-			}
-			m.websocket.WriteMessage(websocket.TextMessage, payload)
-		}
+		return handleKeypress(m, msg)
 	default:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+	}
+
+	return m, nil
+}
+
+var submitBinding = key.NewBinding(key.WithKeys("enter"))
+
+func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	}
+
+	if m.textInput.Focused() && key.Matches(msg, submitBinding) {
+		submitted := m.textInput.Value()
+
+		setTaskCommand := models.SetTaskRequest{
+			Kind: models.SetTask,
+			Task: submitted,
+		}
+		payload, err := json.Marshal(setTaskCommand)
+		if err != nil {
+			return m, nil
+		}
+		m.websocket.WriteMessage(websocket.TextMessage, payload)
+		m.settingTask = false
+		return m, nil
+	}
+
+	if m.settingTask && m.textInput.Focused() {
+		var cmd tea.Cmd
+		m.textInput, cmd = m.textInput.Update(msg)
+		return m, cmd
+	}
+
+	switch msg.String() {
+	case "t":
+		if m.settingTask {
+			return m, nil
+		}
+
+		m.settingTask = true
+		m.textInput.Focus()
+
+		return m, nil
+	case "s":
+		payload, err := json.Marshal(models.Request{
+			Kind: models.Start,
+		})
+		if err != nil {
+			return m, nil
+		}
+		m.websocket.WriteMessage(websocket.TextMessage, payload)
 	}
 
 	return m, nil
@@ -239,6 +280,10 @@ func (m model) View() tea.View {
 	case connected:
 		statusStyle = statusStyle.Foreground(lipgloss.Green)
 		statusString = "Connected"
+	}
+
+	if m.settingTask {
+		statusString = m.textInput.View()
 	}
 
 	s += fmt.Sprintf("\n\n%s", statusStyle.Render(statusString))
