@@ -251,6 +251,10 @@ func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 	case "t":
 		return m, func() tea.Msg { return startSettingTask{} }
 	case "s":
+		if m.pomodoro.Task == "" {
+			return m, func() tea.Msg { return startSettingTask{} }
+		}
+
 		payload, err := json.Marshal(models.Request{
 			Kind: models.Start,
 		})
