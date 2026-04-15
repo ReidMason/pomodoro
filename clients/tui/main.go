@@ -28,7 +28,6 @@ const (
 	connectionLostReconnecting
 	connectionLost
 	connected
-	reconnecting
 )
 
 type model struct {
@@ -275,38 +274,59 @@ func formatTimestamp(t time.Time) string {
 	return time.Time(t).Format("01/02 03:04:05PM")
 }
 
+var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+
 func (m model) View() tea.View {
 	style := lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
 		Width(m.width)
 
-	s := formatTimestamp(m.time) + "\n"
-	s += "Task: " + m.pomodoro.Task
+	s := "Task: " + m.pomodoro.Task
 	s += fmt.Sprintf("\nPomodori: %d/4", m.pomodoro.PomodoriCompleted%4+1)
 	s += "\n" + m.pomodoro.CycleStage.String()
 
 	remaining := time.Until(m.pomodoro.PhaseEndsAt)
 	s += formatTimeDuration(remaining)
 
-	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-	statusString := "unknown"
+	statusStyle := lipgloss.NewStyle()
+	statusString := statusStyle.Render("unknown")
 	switch m.connectionStatus {
 	case connecting:
+		statusStyle = statusStyle.Foreground(lipgloss.Blue)
 		statusString = m.spinner.View() + " Connecting..."
+	case connectionLostReconnecting:
+		statusStyle = statusStyle.Foreground(lipgloss.Yellow)
+		statusString = m.spinner.View() + " Connection lost, reconnecting..."
+	case connectionLost:
+		statusStyle = statusStyle.Foreground(lipgloss.Red)
+		statusString = m.spinner.View() + "Connection lost"
 	case connected:
 		statusStyle = statusStyle.Foreground(lipgloss.Green)
 		statusString = "Connected"
 	}
 
+	statusString = statusStyle.Render(statusString)
+
 	if m.settingTask {
 		statusString = m.textInput.View()
 	}
 
-	s += fmt.Sprintf("\n\n%s", statusStyle.Render(statusString))
-
-	// s += "\n\n" + helpStyle(m.connectionStatus)
+	bottomBar := statusRow(m.width-2, statusString, helpStyle.Render(formatTimestamp(m.time)))
+	s += "\n\n"
+	s += bottomBar
 
 	return tea.NewView(style.Render(s))
+}
+
+func statusRow(totalWidth int, left, right string) string {
+	leftBlock := lipgloss.NewStyle().Render(left)
+	leftW := lipgloss.Width(leftBlock)
+	rightW := max(0, totalWidth-leftW)
+	rightBlock := lipgloss.NewStyle().
+		Width(rightW).
+		Align(lipgloss.Right).
+		Render(right)
+	return lipgloss.JoinHorizontal(lipgloss.Top, leftBlock, rightBlock)
 }
 
 func formatTimeDuration(duration time.Duration) string {
