@@ -37,6 +37,8 @@ type model struct {
 	connectionStatus connectionStatus
 	websocket        *websocket.Conn
 
+	width, height int
+
 	spinner     spinner.Model
 	settingTask bool
 	textInput   textinput.Model
@@ -180,6 +182,10 @@ type stopSettingTask struct{}
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
 	case tickMsg:
 		m.time = getTime()
 		return m, scheduleTick()
@@ -271,7 +277,8 @@ func formatTimestamp(t time.Time) string {
 
 func (m model) View() tea.View {
 	style := lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder())
+		BorderStyle(lipgloss.RoundedBorder()).
+		Width(m.width)
 
 	s := formatTimestamp(m.time) + "\n"
 	s += "Task: " + m.pomodoro.Task
