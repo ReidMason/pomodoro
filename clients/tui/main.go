@@ -215,18 +215,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var submitBinding = key.NewBinding(key.WithKeys("enter"))
 var escBinding = key.NewBinding(key.WithKeys("esc", "escape"))
+var quitBinding = key.NewBinding(key.WithKeys("ctrl+c", "q"))
+var setTaskBinding = key.NewBinding(key.WithKeys("t"))
+var startPomodoroBinding = key.NewBinding(key.WithKeys("s"))
 
 func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
-	switch msg.String() {
-	case "ctrl+c", "q":
+	switch {
+	case key.Matches(msg, quitBinding):
 		return m, tea.Quit
-	}
-
-	if m.textInput.Focused() && key.Matches(msg, escBinding) {
+	case m.textInput.Focused() && key.Matches(msg, escBinding):
 		return m, func() tea.Msg { return stopSettingTask{} }
-	}
-
-	if m.textInput.Focused() && key.Matches(msg, submitBinding) {
+	case m.textInput.Focused() && key.Matches(msg, submitBinding):
 		submitted := m.textInput.Value()
 
 		setTaskCommand := models.SetTaskRequest{
@@ -239,18 +238,13 @@ func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 		}
 		m.websocket.WriteMessage(websocket.TextMessage, payload)
 		return m, func() tea.Msg { return stopSettingTask{} }
-	}
-
-	if m.settingTask && m.textInput.Focused() {
+	case m.settingTask && m.textInput.Focused():
 		var cmd tea.Cmd
 		m.textInput, cmd = m.textInput.Update(msg)
 		return m, cmd
-	}
-
-	switch msg.String() {
-	case "t":
+	case key.Matches(msg, setTaskBinding):
 		return m, func() tea.Msg { return startSettingTask{} }
-	case "s":
+	case key.Matches(msg, startPomodoroBinding):
 		if m.pomodoro.Task == "" {
 			return m, func() tea.Msg { return startSettingTask{} }
 		}
