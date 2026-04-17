@@ -184,7 +184,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.textInput.SetWidth(max(10, msg.Width-30))
+		m.textInput.SetWidth(msg.Width - 5)
 		return m, nil
 	case tickMsg:
 		m.time = getTime()
@@ -309,7 +309,7 @@ func (m model) View() tea.View {
 	statusString = statusStyle.Render(statusString)
 
 	if m.settingTask {
-		statusString = m.textInput.View()
+		s += "\n\nSet task: \n" + m.textInput.View()
 	}
 
 	bottomBar := statusRow(m.width-2, statusString, helpStyle.Render(formatTimestamp(m.time)))
