@@ -184,6 +184,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.textInput.SetWidth(max(10, msg.Width-30))
 		return m, nil
 	case tickMsg:
 		m.time = getTime()
