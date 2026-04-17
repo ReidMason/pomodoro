@@ -299,7 +299,7 @@ func (m model) View() tea.View {
 		statusString = m.spinner.View() + " Connection lost, reconnecting..."
 	case connectionLost:
 		statusStyle = statusStyle.Foreground(lipgloss.Red)
-		statusString = m.spinner.View() + "Connection lost"
+		statusString = "Connection lost"
 	case connected:
 		statusStyle = statusStyle.Foreground(lipgloss.Green)
 		statusString = "Connected"
