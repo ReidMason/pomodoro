@@ -275,6 +275,14 @@ func formatTimestamp(t time.Time) string {
 	return time.Time(t).Format("01/02 03:04:05PM")
 }
 
+func valueOrDefault(text, defaultValue string) string {
+	if text == "" {
+		return defaultValue
+	}
+
+	return text
+}
+
 var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 
 func (m model) View() tea.View {
@@ -282,12 +290,21 @@ func (m model) View() tea.View {
 		BorderStyle(lipgloss.RoundedBorder()).
 		Width(m.width)
 
-	s := "Task: " + m.pomodoro.Task
+	generalStyle := lipgloss.NewStyle()
+
+	s := "Task: " + valueOrDefault(m.pomodoro.Task, helpStyle.Render("No task set"))
 	s += fmt.Sprintf("\nPomodori: %d/4", m.pomodoro.PomodoriCompleted%4+1)
+
 	s += "\n" + m.pomodoro.CycleStage.String()
 
 	remaining := time.Until(m.pomodoro.PhaseEndsAt)
 	s += formatTimeDuration(remaining)
+
+	if m.connectionStatus != connected {
+		generalStyle = generalStyle.Foreground(lipgloss.Color("#626262"))
+	}
+
+	s = generalStyle.Render(s)
 
 	statusStyle := lipgloss.NewStyle()
 	statusString := statusStyle.Render("unknown")
