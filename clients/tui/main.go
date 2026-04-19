@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/gen2brain/beeep"
 	"log"
 	"net/url"
 	"os"
@@ -125,6 +126,10 @@ func startWsClient(program *tea.Program, host string) {
 	}
 }
 
+func alert(message string) {
+	beeep.Alert("Pomodoro", message, "")
+}
+
 func main() {
 	host := flag.String("s", "http://locahost:8080", "Server host address")
 	flag.Parse()
@@ -209,7 +214,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.websocket.WriteMessage(websocket.TextMessage, payload)
 		return m, nil
 	case newPomodoroData:
-		m.pomodoro = pomodoro.PomodoroDto(msg)
+		newData := pomodoro.PomodoroDto(msg)
+		handleAlerts(newData, m.pomodoro)
+		m.pomodoro = newData
 	case websocketClientConnectedEvent:
 		m.websocket = msg
 	case connectionStatusUpdate:
@@ -275,6 +282,21 @@ func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func handleAlerts(newData, oldData pomodoro.PomodoroDto) {
+	if oldData.CycleStage == pomodoro.Idle || newData.CycleStage == oldData.CycleStage {
+		return
+	}
+
+	switch oldData.CycleStage {
+	case pomodoro.PomodoroInProgress:
+		alert("Pomodori finished! Take a break")
+	case pomodoro.ShortBreakInProgress:
+		alert("Short break finished! Time to start a new pomodori")
+	case pomodoro.LongBreakInProgress:
+		alert("Long break finished! Time to start a new pomodori")
+	}
 }
 
 func getTime() time.Time {
