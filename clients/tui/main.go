@@ -215,7 +215,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case newPomodoroData:
 		newData := pomodoro.PomodoroDto(msg)
-		handleAlerts(newData, m.pomodoro)
+		go handleAlerts(newData, m.pomodoro)
 		m.pomodoro = newData
 	case websocketClientConnectedEvent:
 		m.websocket = msg
