@@ -283,7 +283,11 @@ func valueOrDefault(text, defaultValue string) string {
 	return text
 }
 
-var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+func applyMutedStyling(style lipgloss.Style) lipgloss.Style {
+	return style.Foreground(lipgloss.Color("#626262"))
+}
+
+var helpStyle = applyMutedStyling(lipgloss.NewStyle())
 
 func (m model) View() tea.View {
 	style := lipgloss.NewStyle().
@@ -293,15 +297,22 @@ func (m model) View() tea.View {
 	generalStyle := lipgloss.NewStyle()
 
 	s := "Task: " + valueOrDefault(m.pomodoro.Task, helpStyle.Render("No task set"))
-	s += fmt.Sprintf("\nPomodori: %d/4", m.pomodoro.PomodoriCompleted%4+1)
+	s += fmt.Sprintf("\nPomodori: %d/4\n", m.pomodoro.PomodoriCompleted%4+1)
 
-	s += "\n" + m.pomodoro.CycleStage.String()
+	s += fmt.Sprintf("\n%s", m.pomodoro.CycleStage.String())
 
-	remaining := time.Until(m.pomodoro.PhaseEndsAt)
-	s += formatTimeDuration(remaining)
+	timeRemaining := time.Until(m.pomodoro.PhaseEndsAt)
+	timeRemainingDisplay := formatTimeDuration(timeRemaining)
+	timeRemainingStyle := lipgloss.NewStyle()
+
+	if m.pomodoro.CycleStage == pomodoro.Idle {
+		timeRemainingStyle = applyMutedStyling(timeRemainingStyle)
+	}
+
+	s += timeRemainingStyle.Render(timeRemainingDisplay)
 
 	if m.connectionStatus != connected {
-		generalStyle = generalStyle.Foreground(lipgloss.Color("#626262"))
+		generalStyle = applyMutedStyling(generalStyle)
 	}
 
 	s = generalStyle.Render(s)
