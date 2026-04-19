@@ -38,9 +38,10 @@ type model struct {
 
 	width, height int
 
-	spinner     spinner.Model
-	settingTask bool
-	textInput   textinput.Model
+	spinner       spinner.Model
+	settingTask   bool
+	textInput     textinput.Model
+	tryingToStart bool
 }
 
 func dial(u url.URL) (*websocket.Conn, error) {
@@ -158,6 +159,7 @@ func initModel(pomodoro pomodoro.PomodoroDto) model {
 		spinner:          spinner.New(),
 		settingTask:      false,
 		textInput:        ti,
+		tryingToStart:    false,
 	}
 }
 
@@ -178,6 +180,7 @@ func scheduleTick() tea.Cmd {
 type newPomodoroData pomodoro.PomodoroDto
 type startSettingTask struct{}
 type stopSettingTask struct{}
+type startPomodoriTask struct{}
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -200,6 +203,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case stopSettingTask:
 		m.settingTask = false
 		m.textInput.SetValue("")
+		return m, nil
+	case startPomodoriTask:
+		payload, err := json.Marshal(models.Request{
+			Kind: models.Start,
+		})
+		if err != nil {
+			return m, nil
+		}
+		m.websocket.WriteMessage(websocket.TextMessage, payload)
 		return m, nil
 	case newPomodoroData:
 		m.pomodoro = pomodoro.PomodoroDto(msg)
@@ -243,7 +255,16 @@ func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 			return m, nil
 		}
 		m.websocket.WriteMessage(websocket.TextMessage, payload)
-		return m, func() tea.Msg { return stopSettingTask{} }
+
+		var cmds []tea.Cmd
+		cmds = append(cmds, func() tea.Msg { return stopSettingTask{} })
+
+		if m.tryingToStart {
+			m.tryingToStart = false
+			cmds = append(cmds, func() tea.Msg { return startPomodoriTask{} })
+		}
+
+		return m, tea.Sequence(cmds...)
 	case m.settingTask && m.textInput.Focused():
 		var cmd tea.Cmd
 		m.textInput, cmd = m.textInput.Update(msg)
@@ -252,16 +273,10 @@ func handleKeypress(m model, msg tea.KeyPressMsg) (model, tea.Cmd) {
 		return m, func() tea.Msg { return startSettingTask{} }
 	case key.Matches(msg, startPomodoroBinding):
 		if m.pomodoro.Task == "" {
+			m.tryingToStart = true
 			return m, func() tea.Msg { return startSettingTask{} }
 		}
-
-		payload, err := json.Marshal(models.Request{
-			Kind: models.Start,
-		})
-		if err != nil {
-			return m, nil
-		}
-		m.websocket.WriteMessage(websocket.TextMessage, payload)
+		return m, func() tea.Msg { return startPomodoriTask{} }
 	}
 
 	return m, nil
