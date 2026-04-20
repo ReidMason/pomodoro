@@ -376,7 +376,9 @@ func (m model) View() tea.View {
 	s += "\n\n"
 	s += bottomBar
 
-	return tea.NewView(style.Render(s))
+	v := tea.NewView(style.Render(s))
+	v.AltScreen = true
+	return v
 }
 
 func statusRow(totalWidth int, left, right string) string {
